@@ -17,6 +17,7 @@ export function localeForLanguage(language: UiLanguage) {
 const en: Record<string, string> = {
   "Plano de Trade": "Trade Plan",
   "preparar • executar • revisar": "prepare • execute • review",
+  "preparar • congelar • executar • revisar": "prepare • freeze • execute • review",
   "Visão geral": "Overview",
   "Sistema de trade": "Trading system",
   "Biblioteca de setups": "Setup library",
@@ -196,6 +197,8 @@ const en: Record<string, string> = {
   "Exportar backup JSON": "Export JSON backup",
   "Importar backup JSON": "Import JSON backup",
   "Backup importado com sucesso. Backups v1 são migrados automaticamente para o schema atual.": "Backup imported successfully. Older backups are automatically migrated to the current schema.",
+  "Backup importado com sucesso. Backups anteriores são migrados automaticamente para o schema atual.": "Backup imported successfully. Older backups are automatically migrated to the current schema.",
+  "O JSON é o formato de recuperação completa. O schema v3 inclui biblioteca de setups, histórico de versões congeladas e preferência de idioma.": "JSON is the complete recovery format. Schema v3 includes the setup library, frozen-version history, and language preference.",
   "Zona de risco": "Danger zone",
   "Apaga todos os dados deste navegador. Exporte um backup antes, se necessário.": "Deletes all data from this browser. Export a backup first if needed.",
   "Apagar todos os dados": "Delete all data",
@@ -248,6 +251,7 @@ const en: Record<string, string> = {
 const es: Record<string, string> = {
   "Plano de Trade": "Plan de Trading",
   "preparar • executar • revisar": "preparar • ejecutar • revisar",
+  "preparar • congelar • executar • revisar": "preparar • congelar • ejecutar • revisar",
   "Visão geral": "Resumen",
   "Sistema de trade": "Sistema de trading",
   "Biblioteca de setups": "Biblioteca de setups",
@@ -427,6 +431,8 @@ const es: Record<string, string> = {
   "Exportar backup JSON": "Exportar copia JSON",
   "Importar backup JSON": "Importar copia JSON",
   "Backup importado com sucesso. Backups v1 são migrados automaticamente para o schema atual.": "Copia importada correctamente. Las copias antiguas se migran automáticamente al schema actual.",
+  "Backup importado com sucesso. Backups anteriores são migrados automaticamente para o schema atual.": "Copia importada correctamente. Las copias anteriores se migran automáticamente al schema actual.",
+  "O JSON é o formato de recuperação completa. O schema v3 inclui biblioteca de setups, histórico de versões congeladas e preferência de idioma.": "JSON es el formato de recuperación completa. El schema v3 incluye la biblioteca de setups, el historial de versiones congeladas y la preferencia de idioma.",
   "Zona de risco": "Zona de riesgo",
   "Apaga todos os dados deste navegador. Exporte um backup antes, se necessário.": "Elimina todos los datos de este navegador. Exporta una copia antes si es necesario.",
   "Apagar todos os dados": "Eliminar todos los datos",
