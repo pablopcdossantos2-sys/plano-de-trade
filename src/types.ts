@@ -115,6 +115,32 @@ export type TradePlan = {
   updatedAt: string;
 };
 
+
+export type TradeStudy = {
+  id: string;
+  title: string;
+  studyDate: string;
+  referenceDate: string;
+  asset: string;
+  timeframe: string;
+  bias: "Alta" | "Baixa" | "Neutro";
+  setupId?: string;
+  objective: string;
+  marketContext: string;
+  keyLevels: string;
+  macroEvents: string;
+  evidenceAgainstThesis: string;
+  scenarios: Scenario[];
+  behaviorPlan: string;
+  conclusion: string;
+  lessons: string;
+  status: "draft" | "completed";
+  attachments: Attachment[];
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+};
+
 export type Settings = {
   traderName: string;
   assets: string[];
@@ -130,6 +156,7 @@ export type AppState = {
   rules: TradeRule[];
   setups: TradeSetup[];
   plans: TradePlan[];
+  studies: TradeStudy[];
   settings: Settings;
   updatedAt: string;
 };
