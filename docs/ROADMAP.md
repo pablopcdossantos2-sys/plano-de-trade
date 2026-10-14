@@ -53,6 +53,15 @@
 - [x] Migração automática de backups/dados v1.
 - [x] Backups continuam incluindo imagens e agora incluem setups e snapshots.
 
+## Fase 2.5 — Internacionalização ✅
+
+- [x] Interface em Português (Brasil), English e Español.
+- [x] Seletor de idioma persistente nas configurações.
+- [x] Datas e horários formatados conforme o idioma selecionado.
+- [x] Dados do trader mantidos semanticamente estáveis, sem tradução destrutiva dos valores persistidos.
+- [x] Schema v3 com migração automática de v1 e v2.
+- [x] README completo em PT-BR, inglês e espanhol, com navegação cruzada entre idiomas.
+
 ## Fase 3 — Qualidade da preparação
 
 - [ ] Score de preparação antes do congelamento.
