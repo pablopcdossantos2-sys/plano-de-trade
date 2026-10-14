@@ -121,6 +121,7 @@ export type Settings = {
   defaultMaxRisk: string;
   defaultMaxTrades: number;
   theme: "dark" | "light";
+  language: "pt-BR" | "en" | "es";
   attachments: Attachment[];
 };
 
