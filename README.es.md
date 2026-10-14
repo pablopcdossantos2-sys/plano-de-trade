@@ -15,7 +15,7 @@ La herramienta no intenta predecir el mercado. Organiza el proceso de decisión 
 3. **¿Qué haré si se materializa el escenario A, B o C?**
 4. **Después de la sesión, qué hizo el mercado, qué hice yo y cuánto respeté el plan original?**
 
-## Funcionalidades actuales — v0.3
+## Funcionalidades actuales — v0.4
 
 ### Sistema de trading
 
@@ -43,6 +43,28 @@ La herramienta no intenta predecir el mercado. Organiza el proceso de decisión 
 - campo específico de **evidencias contra la tesis** para reducir el sesgo de confirmación;
 - plan conductual en formato “si ocurre X, haré Y”;
 - imágenes de la planificación.
+
+### Estudios
+
+La sección **Estudios** se mantiene separada de los Planes de Trading. Está pensada para ejercicios analíticos deliberados que no necesitan estar relacionados con una operación futura.
+
+Cada estudio puede registrar:
+
+- título, fecha del estudio y fecha de mercado analizada opcional;
+- activo y timeframe/muestra opcionales;
+- sesgo o hipótesis inicial;
+- setup de referencia opcional;
+- pregunta u objetivo analítico;
+- contexto, niveles y eventos/factores relevantes;
+- evidencias contra la hipótesis;
+- escenarios A/B/C con la misma lógica analítica utilizada en los planes;
+- cómo actuaría el trader frente a ese contexto;
+- conclusión, aprendizajes y próximos estudios;
+- gráficos e imágenes;
+- estado **En curso** o **Concluido**;
+- exportación en texto.
+
+Los estudios tienen almacenamiento propio y no aparecen en la agenda de planes operativos.
 
 ### Congelación y versionado
 
@@ -84,7 +106,7 @@ La localización solo afecta a la interfaz. Los textos creados por el trader —
 - compresión de imágenes antes de guardarlas;
 - copia de seguridad JSON completa;
 - restauración de copias;
-- migración automática de los schemas v1 y v2 al **schema v3**;
+- migración automática de los schemas v1, v2 y v3 al **schema v4**;
 - tema claro/oscuro, lista configurable de activos y preferencia persistente de idioma.
 
 ## Filosofía técnica
@@ -125,7 +147,7 @@ En **Configuración > Copia de seguridad y recuperación**:
 - usa **Exportar copia JSON** para guardar una copia completa;
 - usa **Importar copia JSON** para restaurar datos compatibles.
 
-Las copias de los schemas v1 y v2 se migran automáticamente a v3. El sistema no fabrica versiones congeladas para planes antiguos, ya que eso crearía una falsa evidencia de que estaban bloqueados antes de la sesión.
+Las copias de los schemas v1, v2 y v3 se migran automáticamente a v4. El sistema no fabrica versiones congeladas para planes antiguos, ya que eso crearía una falsa evidencia de que estaban bloqueados antes de la sesión.
 
 ## Documentación
 
@@ -134,4 +156,4 @@ Las copias de los schemas v1 y v2 se migran automáticamente a v3. El sistema no
 
 ## Privacidad
 
-El MVP no envía planes, reglas, setups, imágenes ni revisiones a un servidor. Los datos permanecen en el almacenamiento local del navegador salvo que el usuario los exporte explícitamente.
+El MVP no envía planes, estudios, reglas, setups, imágenes ni revisiones a un servidor. Los datos permanecen en el almacenamiento local del navegador salvo que el usuario los exporte explícitamente.
