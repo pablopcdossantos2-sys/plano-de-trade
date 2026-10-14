@@ -245,7 +245,32 @@ const en: Record<string, string> = {
   "Descreva a sequência do mercado, mudanças de contexto e os pontos que mais importaram.": "Describe the market sequence, context changes, and the points that mattered most.",
   "Entradas, saídas, esperas, cancelamentos e decisões que você realmente tomou.": "Entries, exits, waits, cancellations, and decisions you actually made.",
   "O que você fez diferente do planejado? Por quê?": "What did you do differently from the plan? Why?",
-  "Ex.: +1,4R; -R$ 250; não operei": "E.g.: +1.4R; -$250; did not trade"
+  "Ex.: +1,4R; -R$ 250; não operei": "E.g.: +1.4R; -$250; did not trade",
+  "sem versão congelada": "no frozen version",
+  "Ex.: Não aumentar stop após entrar": "E.g.: Do not widen the stop after entering",
+  "Ex.: Pullback na VWAP após abertura direcional": "E.g.: VWAP pullback after a directional open",
+  "Ex.: Rompimento com aceitação acima da máxima": "E.g.: Breakout with acceptance above the high",
+  "Descreva abaixo depois do pregão.": "Describe it below after the trading session.",
+  "Descreva abaixo sua execução.": "Describe your execution below.",
+  "Ex.: fluxo vendedor apesar do viés de alta; dólar rompendo resistência; preço rejeitando a região que sustentava minha hipótese…": "E.g.: selling flow despite a bullish bias; dollar breaking resistance; price rejecting the area that supported my thesis…",
+  "Ex.: Se eu perceber vontade de recuperar prejuízo imediatamente, não enviarei nova ordem; vou me afastar da tela por 5 minutos e reler o limite diário.": "E.g.: If I notice an urge to immediately recover a loss, I will not send a new order; I will step away from the screen for 5 minutes and reread my daily limit.",
+  "Plano sem título de cenário A": "Plan without a scenario A title",
+  "Nenhuma versão foi congelada ainda. Enquanto estiver em rascunho, o planejamento pode ser alterado sem deixar registro histórico.": "No version has been frozen yet. While it remains a draft, the plan can be changed without leaving a historical record.",
+  "Planejado × Mercado real × Minha execução": "Planned × Actual Market × My Execution",
+  "Viés": "Bias",
+  "Cenários": "Scenarios",
+  "Não operar se": "Do not trade if",
+  "Cenário observado": "Observed scenario",
+  "Segui o plano?": "Did I follow the plan?",
+  "Planejamento congelado": "Frozen planning",
+  "Nenhum setup": "No setup",
+  "depois do pregão": "after the trading session",
+  ". O planejamento congelado acima permanece intacto para permitir uma comparação honesta.": ". The frozen plan above remains intact to allow an honest comparison.",
+  "Salvar": "Save",
+  "Salvar e fechar": "Save and close",
+  "Fechar sem salvar mudanças atuais": "Close without saving current changes",
+  "Crie hipóteses, procure contraprovas, congele a preparação e depois compare aquilo que você planejou com o mercado real e sua execução.": "Create hypotheses, look for counterevidence, freeze the preparation, and then compare what you planned with the actual market and your execution.",
+  "Os dados ficam neste navegador. Use backups JSON para transportar ou restaurar regras, setups, planos, versões congeladas, revisões e imagens.": "Data stays in this browser. Use JSON backups to move or restore rules, setups, plans, frozen versions, reviews, and images."
 };
 
 const es: Record<string, string> = {
@@ -479,10 +504,35 @@ const es: Record<string, string> = {
   "Descreva a sequência do mercado, mudanças de contexto e os pontos que mais importaram.": "Describe la secuencia del mercado, los cambios de contexto y los puntos que más importaron.",
   "Entradas, saídas, esperas, cancelamentos e decisões que você realmente tomou.": "Entradas, salidas, esperas, cancelaciones y decisiones que realmente tomaste.",
   "O que você fez diferente do planejado? Por quê?": "¿Qué hiciste diferente de lo planificado? ¿Por qué?",
-  "Ex.: +1,4R; -R$ 250; não operei": "Ej.: +1,4R; -$250; no operé"
+  "Ex.: +1,4R; -R$ 250; não operei": "Ej.: +1,4R; -$250; no operé",
+  "sem versão congelada": "sin versión congelada",
+  "Ex.: Não aumentar stop após entrar": "Ej.: No ampliar el stop después de entrar",
+  "Ex.: Pullback na VWAP após abertura direcional": "Ej.: Pullback a la VWAP después de una apertura direccional",
+  "Ex.: Rompimento com aceitação acima da máxima": "Ej.: Ruptura con aceptación por encima del máximo",
+  "Descreva abaixo depois do pregão.": "Descríbelo abajo después de la sesión.",
+  "Descreva abaixo sua execução.": "Describe tu ejecución abajo.",
+  "Ex.: fluxo vendedor apesar do viés de alta; dólar rompendo resistência; preço rejeitando a região que sustentava minha hipótese…": "Ej.: flujo vendedor a pesar del sesgo alcista; dólar rompiendo resistencia; precio rechazando la zona que sostenía mi hipótesis…",
+  "Ex.: Se eu perceber vontade de recuperar prejuízo imediatamente, não enviarei nova ordem; vou me afastar da tela por 5 minutos e reler o limite diário.": "Ej.: Si noto ganas de recuperar una pérdida inmediatamente, no enviaré una nueva orden; me alejaré de la pantalla durante 5 minutos y releeré mi límite diario.",
+  "Plano sem título de cenário A": "Plan sin título de escenario A",
+  "Nenhuma versão foi congelada ainda. Enquanto estiver em rascunho, o planejamento pode ser alterado sem deixar registro histórico.": "Aún no se ha congelado ninguna versión. Mientras siga como borrador, el plan puede modificarse sin dejar un registro histórico.",
+  "Planejado × Mercado real × Minha execução": "Planificado × Mercado real × Mi ejecución",
+  "Viés": "Sesgo",
+  "Cenários": "Escenarios",
+  "Não operar se": "No operar si",
+  "Cenário observado": "Escenario observado",
+  "Segui o plano?": "¿Seguí el plan?",
+  "Planejamento congelado": "Planificación congelada",
+  "Nenhum setup": "Ningún setup",
+  "depois do pregão": "después de la sesión",
+  ". O planejamento congelado acima permanece intacto para permitir uma comparação honesta.": ". La planificación congelada anterior permanece intacta para permitir una comparación honesta.",
+  "Salvar": "Guardar",
+  "Salvar e fechar": "Guardar y cerrar",
+  "Fechar sem salvar mudanças atuais": "Cerrar sin guardar los cambios actuales",
+  "Crie hipóteses, procure contraprovas, congele a preparação e depois compare aquilo que você planejou com o mercado real e sua execução.": "Crea hipótesis, busca contraevidencias, congela la preparación y luego compara lo que planificaste con el mercado real y tu ejecución.",
+  "Os dados ficam neste navegador. Use backups JSON para transportar ou restaurar regras, setups, planos, versões congeladas, revisões e imagens.": "Los datos permanecen en este navegador. Usa copias JSON para trasladar o restaurar reglas, setups, planes, versiones congeladas, revisiones e imágenes."
 };
 
-function dictionary(language: UiLanguage) {
+function dictionary(language: UiLanguage): Record<string, string> {
   return language === "en" ? en : language === "es" ? es : {};
 }
 
