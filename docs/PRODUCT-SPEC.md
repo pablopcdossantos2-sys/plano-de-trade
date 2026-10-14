@@ -143,6 +143,16 @@ O comparador apresenta:
 
 A ausência de uma versão congelada deve ser explicitamente sinalizada.
 
+### 3.7 Internacionalização
+
+A interface deve suportar, no mínimo:
+
+- Português (Brasil);
+- English;
+- Español.
+
+A preferência é persistida nas configurações e incluída no backup. A internacionalização não deve traduzir nem reescrever destrutivamente textos criados pelo usuário. Valores internos necessários à compatibilidade histórica permanecem estáveis e recebem apenas rótulos localizados na interface.
+
 ## 4. Persistência e portabilidade
 
 ### Web MVP
@@ -151,24 +161,22 @@ A ausência de uma versão congelada deve ser explicitamente sinalizada.
 - imagens em Data URL compactadas;
 - backup JSON completo.
 
-### Schema v2
+### Schema v3
 
-Adiciona:
+Mantém os recursos do schema v2 e adiciona:
 
-- `setups` no estado global;
-- `evidenceAgainstThesis` nos planos;
-- `planStatus`;
-- `versions: PlanSnapshot[]`;
-- `executionSummary` na revisão.
+- `language` nas configurações, com suporte a `pt-BR`, `en` e `es`;
+- migração automática de dados v1 e v2;
+- preferência de idioma incluída nos backups.
 
-### Migração v1 → v2
+### Migração v1/v2 → v3
 
 - regras são preservadas;
 - planos são preservados;
 - revisões e imagens são preservadas;
-- `setups` inicia vazio;
-- novos campos textuais iniciam vazios;
-- planos antigos são mantidos como rascunho, sem snapshots retroativos.
+- backups v1 continuam recebendo as migrações de setups, contraprova e versionamento;
+- backups v1 e v2 recebem `language: "pt-BR"` como preferência inicial;
+- planos antigos continuam como rascunho, sem snapshots retroativos inventados.
 
 ## 5. Próximas métricas úteis
 
