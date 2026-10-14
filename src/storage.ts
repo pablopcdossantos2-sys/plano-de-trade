@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AppState, TradePlan } from "./types";
 
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 // Mantemos a mesma chave para preservar os dados criados no MVP v1.
 export const STORAGE_KEY = "plano-de-trade-data-v1";
 
@@ -164,12 +164,48 @@ const planV2Schema = z.object({
   updatedAt: z.string(),
 });
 
+
+const studySchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  studyDate: z.string(),
+  referenceDate: z.string(),
+  asset: z.string(),
+  timeframe: z.string(),
+  bias: z.enum(["Alta", "Baixa", "Neutro"]),
+  setupId: z.string().optional(),
+  objective: z.string(),
+  marketContext: z.string(),
+  keyLevels: z.string(),
+  macroEvents: z.string(),
+  evidenceAgainstThesis: z.string(),
+  scenarios: z.array(scenarioSchema),
+  behaviorPlan: z.string(),
+  conclusion: z.string(),
+  lessons: z.string(),
+  status: z.enum(["draft", "completed"]),
+  attachments: z.array(attachmentSchema),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  completedAt: z.string().optional(),
+});
+
 const stateV2Schema = z.object({
   schemaVersion: z.literal(2),
   rules: z.array(ruleSchema),
   setups: z.array(setupSchema),
   plans: z.array(planV2Schema),
   settings: settingsV2Schema,
+  updatedAt: z.string(),
+});
+
+const stateV3Schema = z.object({
+  schemaVersion: z.literal(3),
+  rules: z.array(ruleSchema),
+  setups: z.array(setupSchema),
+  plans: z.array(planV2Schema),
+  studies: z.array(studySchema),
+  settings: settingsSchema,
   updatedAt: z.string(),
 });
 
@@ -192,6 +228,7 @@ export function initialState(): AppState {
     rules: [],
     setups: [],
     plans: [],
+    studies: [],
     settings: {
       traderName: "",
       assets: ["WINFUT", "WDOFUT", "DI1FUT", "EWZ"],
@@ -234,6 +271,20 @@ function migrateState(data: unknown): AppState {
     return current.data;
   }
 
+  if (versionResult.data.schemaVersion === 3) {
+    const legacy = stateV3Schema.safeParse(data);
+    if (!legacy.success) {
+      const issue = legacy.error.issues[0];
+      throw new Error(`Backup v3 inválido em ${issue.path.join(".") || "arquivo"}: ${issue.message}`);
+    }
+    return {
+      ...legacy.data,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      studies: [],
+      updatedAt: now(),
+    };
+  }
+
   if (versionResult.data.schemaVersion === 2) {
     const legacy = stateV2Schema.safeParse(data);
     if (!legacy.success) {
@@ -243,6 +294,7 @@ function migrateState(data: unknown): AppState {
     return {
       ...legacy.data,
       schemaVersion: CURRENT_SCHEMA_VERSION,
+      studies: [],
       settings: { ...legacy.data.settings, language: "pt-BR" },
       updatedAt: now(),
     };
@@ -259,6 +311,7 @@ function migrateState(data: unknown): AppState {
       rules: legacy.data.rules,
       setups: [],
       plans: legacy.data.plans.map(migrateV1Plan),
+      studies: [],
       settings: { ...legacy.data.settings, language: "pt-BR" },
       updatedAt: now(),
     };
