@@ -16,7 +16,7 @@ A ferramenta não pretende prever o mercado. Ela organiza o processo decisório 
 3. **O que farei se o cenário A, B ou C se materializar?**
 4. **Depois do pregão, o que o mercado fez, o que eu fiz e quanto respeitei o plano original?**
 
-## Funcionalidades atuais — v0.3
+## Funcionalidades atuais — v0.4
 
 ### Sistema de trade
 
@@ -44,6 +44,28 @@ A ferramenta não pretende prever o mercado. Ela organiza o processo decisório 
 - campo específico de **evidências contra a tese**, para reduzir viés de confirmação;
 - plano comportamental no formato “se X acontecer, farei Y”;
 - imagens do planejamento.
+
+### Estudos
+
+A seção **Estudos** é mantida separada dos Planos de Trade. Ela serve para análises deliberadas que não precisam estar relacionadas a uma operação futura.
+
+Cada estudo pode registrar:
+
+- título, data do estudo e data de mercado analisada opcional;
+- ativo e timeframe/recorte opcionais;
+- viés ou hipótese inicial;
+- setup de referência opcional;
+- pergunta ou objetivo analítico;
+- contexto, níveis e eventos/fatores relevantes;
+- evidências contra a hipótese;
+- cenários A/B/C com a mesma lógica analítica usada nos planos;
+- como o trader agiria diante daquele contexto;
+- conclusão, aprendizados e próximos estudos;
+- imagens e gráficos;
+- status **Em andamento** ou **Concluído**;
+- exportação em texto.
+
+Estudos possuem armazenamento próprio e não aparecem na agenda de planos operacionais.
 
 ### Congelamento e versionamento
 
@@ -85,7 +107,7 @@ A tradução atua apenas na interface. Textos escritos pelo trader — regras, s
 - imagens compactadas antes da persistência;
 - backup completo em JSON;
 - restauração de backups;
-- **migração automática de schemas anteriores para o schema v3**, preservando planos, regras, revisões e imagens criados no MVP anterior;
+- **migração automática de schemas anteriores para o schema v4**, preservando planos, regras, revisões e imagens criados no MVP anterior;
 - tema claro/escuro e lista configurável de ativos.
 
 ## Filosofia técnica
@@ -126,7 +148,7 @@ Em **Configurações > Backup e recuperação**:
 - use **Exportar backup JSON** para salvar uma cópia completa;
 - use **Importar backup JSON** para restaurar dados compatíveis.
 
-Backups dos schemas v1 e v2 são migrados automaticamente para v3. O sistema não fabrica versões congeladas para planos antigos, pois isso criaria uma falsa evidência de que eles já estavam travados antes do pregão.
+Backups dos schemas v1, v2 e v3 são migrados automaticamente para v4. O sistema não fabrica versões congeladas para planos antigos, pois isso criaria uma falsa evidência de que eles já estavam travados antes do pregão.
 
 ## Documentação
 
@@ -135,4 +157,4 @@ Backups dos schemas v1 e v2 são migrados automaticamente para v3. O sistema nã
 
 ## Privacidade
 
-O MVP não envia planos, regras, setups ou imagens para um servidor. Os dados permanecem no armazenamento local do navegador usado para acessar a ferramenta.
+O MVP não envia planos, estudos, regras, setups ou imagens para um servidor. Os dados permanecem no armazenamento local do navegador usado para acessar a ferramenta.
