@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { prepareImage } from "./images";
 import { exportBackup, initialState, loadState, parseBackup, saveState, STORAGE_KEY } from "./storage";
+import { localeForLanguage, useInterfaceLanguage } from "./i18n";
 import type {
   AppState,
   Attachment,
@@ -23,6 +24,8 @@ const defaultChecklist = [
   "Defini risco máximo e número máximo de trades",
   "Procurei evidências que contradizem minha tese principal",
 ];
+
+let activeLocale = "pt-BR";
 
 function isoDateLocal(date = new Date()) {
   const offset = date.getTimezoneOffset() * 60_000;
@@ -114,13 +117,13 @@ function blankSetup(): TradeSetup {
 
 function fmtDate(value: string) {
   if (!value) return "—";
-  const [y, m, d] = value.split("-");
-  return `${d}/${m}/${y}`;
+  const [y, m, d] = value.split("-").map(Number);
+  return new Intl.DateTimeFormat(activeLocale, { dateStyle: "short" }).format(new Date(y, m - 1, d));
 }
 
 function fmtDateTime(value?: string) {
   if (!value) return "—";
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
+  return new Intl.DateTimeFormat(activeLocale, { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
 }
 
 function downloadText(filename: string, text: string) {
@@ -611,7 +614,7 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
       const next = parseBackup(await file.text());
       setState(next);
       setAssetsText(next.settings.assets.join(", "));
-      setMessage("Backup importado com sucesso. Backups v1 são migrados automaticamente para o schema atual.");
+      setMessage("Backup importado com sucesso. Backups anteriores são migrados automaticamente para o schema atual.");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Falha ao importar backup.");
     }
@@ -628,9 +631,10 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
         <Field label="Ativos disponíveis" hint="Separe os ativos por vírgula."><textarea rows={4} value={assetsText} onChange={(e) => setAssetsText(e.target.value)} onBlur={() => patch({ assets: assetsText.split(",").map((x) => x.trim().toUpperCase()).filter(Boolean) })} /></Field>
         <div className="form-grid two"><Field label="Risco máximo padrão"><input value={settings.defaultMaxRisk} onChange={(e) => patch({ defaultMaxRisk: e.target.value })} placeholder="Ex.: 2R" /></Field><Field label="Máx. de trades padrão"><input type="number" min={1} value={settings.defaultMaxTrades} onChange={(e) => patch({ defaultMaxTrades: Math.max(1, Number(e.target.value) || 1) })} /></Field></div>
         <Field label="Tema"><select value={settings.theme} onChange={(e) => patch({ theme: e.target.value as "dark" | "light" })}><option value="dark">Escuro</option><option value="light">Claro</option></select></Field>
+        <Field label="Idioma da interface"><select value={settings.language} onChange={(e) => patch({ language: e.target.value as "pt-BR" | "en" | "es" })}><option value="pt-BR">Português (Brasil)</option><option value="en">English</option><option value="es">Español</option></select></Field>
         <AttachmentField value={settings.attachments} onChange={(attachments) => patch({ attachments })} title="Imagens de referência geral" />
       </div>
-      <div className="panel"><h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v2 inclui também a biblioteca de setups e todo o histórico de versões congeladas.</p>
+      <div className="panel"><h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v3 inclui biblioteca de setups, histórico de versões congeladas e preferência de idioma.</p>
         <div className="stack-actions"><button className="primary" onClick={() => exportBackup(state)}>Exportar backup JSON</button><button onClick={() => fileRef.current?.click()}>Importar backup JSON</button><input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => void importFile(e.target.files?.[0])} /></div>
         {message && <div className="notice">{message}</div>}
         <div className="danger-zone"><h3>Zona de risco</h3><p>Apaga todos os dados deste navegador. Exporte um backup antes, se necessário.</p><button className="danger" onClick={() => { if (confirm("Apagar todos os dados locais? Esta ação não pode ser desfeita.")) { localStorage.removeItem(STORAGE_KEY); const fresh = initialState(); setState(fresh); setAssetsText(fresh.settings.assets.join(", ")); } }}>Apagar todos os dados</button></div>
@@ -643,6 +647,9 @@ export default function App() {
   const [state, setState] = useState<AppState>(() => loadState());
   const [tab, setTab] = useState<Tab>("dashboard");
   const [saveError, setSaveError] = useState("");
+
+  activeLocale = localeForLanguage(state.settings.language);
+  useInterfaceLanguage(state.settings.language);
 
   useEffect(() => {
     document.documentElement.dataset.theme = state.settings.theme;
