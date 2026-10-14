@@ -15,7 +15,7 @@ The tool is not designed to predict the market. It organizes the trader's decisi
 3. **What will I do if scenario A, B, or C materializes?**
 4. **After the session, what did the market do, what did I do, and how closely did I follow the original plan?**
 
-## Current features — v0.3
+## Current features — v0.4
 
 ### Trading system
 
@@ -43,6 +43,28 @@ The tool is not designed to predict the market. It organizes the trader's decisi
 - a dedicated **evidence against the thesis** field to reduce confirmation bias;
 - behavioral plan in the form “if X happens, I will do Y”;
 - planning images.
+
+### Studies
+
+The **Studies** section is kept separate from Trade Plans. It is designed for deliberate analytical exercises that do not need to be connected to a future trade.
+
+Each study can store:
+
+- title, study date, and optional analyzed market date;
+- optional asset and timeframe/sample;
+- initial bias or hypothesis;
+- optional reference setup;
+- analytical question or objective;
+- context, levels, and relevant events/factors;
+- evidence against the hypothesis;
+- A/B/C scenarios using the same analytical logic as trade plans;
+- how the trader would act in that context;
+- conclusion, lessons, and next studies;
+- charts and images;
+- **In progress** or **Completed** status;
+- text export.
+
+Studies have their own storage collection and do not appear in the operational plan agenda.
 
 ### Freezing and versioning
 
@@ -84,7 +106,7 @@ Localization affects only the interface. User-authored content — rules, setups
 - images compressed before persistence;
 - complete JSON backup;
 - backup restoration;
-- automatic migration from schema v1 and v2 to **schema v3**;
+- automatic migration from schema v1, v2, and v3 to **schema v4**;
 - light/dark theme, configurable asset list, and persistent language preference.
 
 ## Technical philosophy
@@ -125,7 +147,7 @@ Under **Settings > Backup and recovery**:
 - use **Export JSON backup** to save a complete copy;
 - use **Import JSON backup** to restore compatible data.
 
-Schema v1 and v2 backups are migrated automatically to v3. The system does not fabricate frozen versions for old plans because that would create false evidence that they had already been locked before the session.
+Schema v1, v2, and v3 backups are migrated automatically to v4. The system does not fabricate frozen versions for old plans because that would create false evidence that they had already been locked before the session.
 
 ## Documentation
 
@@ -134,4 +156,4 @@ Schema v1 and v2 backups are migrated automatically to v3. The system does not f
 
 ## Privacy
 
-The MVP does not send plans, rules, setups, images, or reviews to a server. Data remains in the browser's local storage unless the user explicitly exports it.
+The MVP does not send plans, studies, rules, setups, images, or reviews to a server. Data remains in the browser's local storage unless the user explicitly exports it.
