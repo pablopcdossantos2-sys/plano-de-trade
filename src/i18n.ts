@@ -536,7 +536,7 @@ function dictionary(language: UiLanguage): Record<string, string> {
   return language === "en" ? en : language === "es" ? es : {};
 }
 
-function translate(source: string, language: UiLanguage) {
+export function translateUi(source: string, language: UiLanguage) {
   if (language === "pt-BR") return source;
   const map = dictionary(language);
   if (map[source]) return map[source];
@@ -567,7 +567,7 @@ function translateTextNode(node: Node, language: UiLanguage) {
   const leading = memory.source.match(/^\s*/)?.[0] ?? "";
   const trailing = memory.source.match(/\s*$/)?.[0] ?? "";
   const core = memory.source.trim();
-  const next = leading + translate(core, language) + trailing;
+  const next = leading + translateUi(core, language) + trailing;
 
   if (current !== next) node.nodeValue = next;
   memory.rendered = next;
@@ -588,7 +588,7 @@ function translateAttribute(element: Element, name: "placeholder" | "title" | "a
     all[name] = memory;
   }
 
-  const next = translate(memory.source, language);
+  const next = translateUi(memory.source, language);
   if (current !== next) element.setAttribute(name, next);
   memory.rendered = next;
 }
