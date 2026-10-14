@@ -39,15 +39,55 @@ export type Scenario = {
   avoid: string;
 };
 
+export type TradeSetup = {
+  id: string;
+  title: string;
+  description: string;
+  marketContext: string;
+  entryCriteria: string;
+  confirmation: string;
+  invalidation: string;
+  stopModel: string;
+  targetModel: string;
+  avoid: string;
+  behaviorNotes: string;
+  active: boolean;
+  attachments: Attachment[];
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type PlanReview = {
   happened: string;
   observedScenario: "A" | "B" | "C" | "Nenhum" | "Mistura" | "";
   followedPlan: "Sim" | "Parcialmente" | "Não" | "Não operei" | "";
+  executionSummary: string;
   deviations: string;
   lessons: string;
   result: string;
   attachments: Attachment[];
   reviewedAt?: string;
+};
+
+export type PlanSnapshot = {
+  id: string;
+  version: number;
+  frozenAt: string;
+  asset: string;
+  tradingDate: string;
+  bias: "Alta" | "Baixa" | "Neutro";
+  setupId?: string;
+  marketContext: string;
+  keyLevels: string;
+  macroEvents: string;
+  evidenceAgainstThesis: string;
+  maxRisk: string;
+  maxTrades: number;
+  noTradeConditions: string;
+  checklist: string[];
+  scenarios: Scenario[];
+  behaviorPlan: string;
+  attachments: Attachment[];
 };
 
 export type TradePlan = {
@@ -56,9 +96,11 @@ export type TradePlan = {
   tradingDate: string;
   asset: string;
   bias: "Alta" | "Baixa" | "Neutro";
+  setupId?: string;
   marketContext: string;
   keyLevels: string;
   macroEvents: string;
+  evidenceAgainstThesis: string;
   maxRisk: string;
   maxTrades: number;
   noTradeConditions: string;
@@ -66,6 +108,8 @@ export type TradePlan = {
   scenarios: Scenario[];
   behaviorPlan: string;
   attachments: Attachment[];
+  planStatus: "draft" | "frozen";
+  versions: PlanSnapshot[];
   review: PlanReview;
   createdAt: string;
   updatedAt: string;
@@ -83,6 +127,7 @@ export type Settings = {
 export type AppState = {
   schemaVersion: number;
   rules: TradeRule[];
+  setups: TradeSetup[];
   plans: TradePlan[];
   settings: Settings;
   updatedAt: string;
