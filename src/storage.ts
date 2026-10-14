@@ -204,7 +204,6 @@ const stateV3Schema = z.object({
   rules: z.array(ruleSchema),
   setups: z.array(setupSchema),
   plans: z.array(planV2Schema),
-  studies: z.array(studySchema),
   settings: settingsSchema,
   updatedAt: z.string(),
 });
@@ -214,6 +213,7 @@ const stateSchema = z.object({
   rules: z.array(ruleSchema),
   setups: z.array(setupSchema),
   plans: z.array(planV2Schema),
+  studies: z.array(studySchema),
   settings: settingsSchema,
   updatedAt: z.string(),
 });
