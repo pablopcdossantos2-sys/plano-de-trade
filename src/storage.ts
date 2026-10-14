@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AppState, TradePlan } from "./types";
 
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 // Mantemos a mesma chave para preservar os dados criados no MVP v1.
 export const STORAGE_KEY = "plano-de-trade-data-v1";
 
@@ -37,13 +37,17 @@ const ruleSchema = z.object({
   updatedAt: z.string(),
 });
 
-const settingsSchema = z.object({
+const settingsV2Schema = z.object({
   traderName: z.string(),
   assets: z.array(z.string()),
   defaultMaxRisk: z.string(),
   defaultMaxTrades: z.number().int().min(1),
   theme: z.enum(["dark", "light"]),
   attachments: z.array(attachmentSchema),
+});
+
+const settingsSchema = settingsV2Schema.extend({
+  language: z.enum(["pt-BR", "en", "es"]),
 });
 
 const reviewV1Schema = z.object({
@@ -82,7 +86,7 @@ const legacyStateSchema = z.object({
   schemaVersion: z.literal(1),
   rules: z.array(ruleSchema),
   plans: z.array(planV1Schema),
-  settings: settingsSchema,
+  settings: settingsV2Schema,
   updatedAt: z.string(),
 });
 
@@ -160,6 +164,15 @@ const planV2Schema = z.object({
   updatedAt: z.string(),
 });
 
+const stateV2Schema = z.object({
+  schemaVersion: z.literal(2),
+  rules: z.array(ruleSchema),
+  setups: z.array(setupSchema),
+  plans: z.array(planV2Schema),
+  settings: settingsV2Schema,
+  updatedAt: z.string(),
+});
+
 const stateSchema = z.object({
   schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
   rules: z.array(ruleSchema),
@@ -185,6 +198,7 @@ export function initialState(): AppState {
       defaultMaxRisk: "",
       defaultMaxTrades: 3,
       theme: "dark",
+      language: "pt-BR",
       attachments: [],
     },
     updatedAt: now(),
@@ -220,6 +234,20 @@ function migrateState(data: unknown): AppState {
     return current.data;
   }
 
+  if (versionResult.data.schemaVersion === 2) {
+    const legacy = stateV2Schema.safeParse(data);
+    if (!legacy.success) {
+      const issue = legacy.error.issues[0];
+      throw new Error(`Backup v2 inválido em ${issue.path.join(".") || "arquivo"}: ${issue.message}`);
+    }
+    return {
+      ...legacy.data,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      settings: { ...legacy.data.settings, language: "pt-BR" },
+      updatedAt: now(),
+    };
+  }
+
   if (versionResult.data.schemaVersion === 1) {
     const legacy = legacyStateSchema.safeParse(data);
     if (!legacy.success) {
@@ -231,7 +259,7 @@ function migrateState(data: unknown): AppState {
       rules: legacy.data.rules,
       setups: [],
       plans: legacy.data.plans.map(migrateV1Plan),
-      settings: legacy.data.settings,
+      settings: { ...legacy.data.settings, language: "pt-BR" },
       updatedAt: now(),
     };
   }
