@@ -62,6 +62,20 @@
 - [x] Schema v3 com migração automática de v1 e v2.
 - [x] README completo em PT-BR, inglês e espanhol, com navegação cruzada entre idiomas.
 
+## Fase 2.6 — Estudos analíticos ✅
+
+- [x] Seção Estudos separada de Planos de Trade.
+- [x] Modelo de dados próprio para estudos.
+- [x] Título, datas, ativo opcional e timeframe/recorte.
+- [x] Pergunta/objetivo analítico.
+- [x] Contexto, níveis, eventos e contraprova da hipótese.
+- [x] Cenários A/B/C reutilizando a lógica analítica dos planos.
+- [x] Campo “como eu agiria” para treino de decisão.
+- [x] Conclusão, aprendizados e próximos estudos.
+- [x] Imagens, status Em andamento/Concluído e exportação textual.
+- [x] Suporte trilíngue desde o lançamento da funcionalidade.
+- [x] Schema v4 e migração automática de v1, v2 e v3.
+
 ## Fase 3 — Qualidade da preparação
 
 - [ ] Score de preparação antes do congelamento.
