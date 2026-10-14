@@ -97,7 +97,34 @@ Campos principais:
 - plano comportamental;
 - imagens.
 
-### 3.5 Congelamento e versões
+### 3.5 Estudos
+
+Estudos são registros analíticos independentes de Planos de Trade. Seu propósito é permitir treino deliberado, investigação de padrões e exercício da capacidade de leitura sem pressupor intenção de operar.
+
+Campos principais:
+
+- título;
+- data do estudo;
+- data de mercado analisada opcional;
+- ativo opcional;
+- timeframe/recorte;
+- viés ou hipótese inicial;
+- setup de referência opcional;
+- pergunta/objetivo;
+- contexto;
+- níveis importantes;
+- eventos/fatores relevantes;
+- evidências contra a hipótese;
+- cenários A/B/C;
+- plano de decisão / “como eu agiria”;
+- conclusão;
+- aprendizados e próximos estudos;
+- imagens;
+- status `draft` ou `completed`.
+
+Os estudos devem permanecer em coleção própria e não participar da agenda operacional de planos.
+
+### 3.6 Congelamento e versões
 
 Estados:
 
@@ -114,7 +141,7 @@ Ao congelar:
 
 Para alterar o planejamento, o usuário escolhe **Criar nova versão**. A versão anterior continua no histórico.
 
-### 3.6 Revisão e comparador
+### 3.7 Revisão e comparador
 
 A revisão permanece editável mesmo quando a preparação está congelada.
 
@@ -143,7 +170,7 @@ O comparador apresenta:
 
 A ausência de uma versão congelada deve ser explicitamente sinalizada.
 
-### 3.7 Internacionalização
+### 3.8 Internacionalização
 
 A interface deve suportar, no mínimo:
 
@@ -161,21 +188,24 @@ A preferência é persistida nas configurações e incluída no backup. A intern
 - imagens em Data URL compactadas;
 - backup JSON completo.
 
-### Schema v3
+### Schema v4
 
-Mantém os recursos do schema v2 e adiciona:
+Mantém os recursos anteriores e adiciona:
 
-- `language` nas configurações, com suporte a `pt-BR`, `en` e `es`;
-- migração automática de dados v1 e v2;
-- preferência de idioma incluída nos backups.
+- `studies: TradeStudy[]` no estado global;
+- armazenamento separado entre estudos e planos operacionais;
+- `language` continua suportando `pt-BR`, `en` e `es`;
+- migração automática de dados v1, v2 e v3;
+- estudos incluídos no backup JSON completo.
 
-### Migração v1/v2 → v3
+### Migração v1/v2/v3 → v4
 
 - regras são preservadas;
 - planos são preservados;
 - revisões e imagens são preservadas;
 - backups v1 continuam recebendo as migrações de setups, contraprova e versionamento;
 - backups v1 e v2 recebem `language: "pt-BR"` como preferência inicial;
+- backups v1, v2 e v3 recebem `studies: []` na migração;
 - planos antigos continuam como rascunho, sem snapshots retroativos inventados.
 
 ## 5. Próximas métricas úteis
