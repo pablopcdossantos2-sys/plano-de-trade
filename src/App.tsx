@@ -12,9 +12,10 @@ import type {
   TradePlan,
   TradeRule,
   TradeSetup,
+  TradeStudy,
 } from "./types";
 
-type Tab = "dashboard" | "rules" | "setups" | "plans" | "settings";
+type Tab = "dashboard" | "rules" | "setups" | "plans" | "studies" | "settings";
 
 const ruleCategories: RuleCategory[] = ["Entrada", "Saída", "Risco", "Horário", "Contexto", "Comportamento", "Outro"];
 const defaultChecklist = [
@@ -90,6 +91,34 @@ function newPlan(state: AppState): TradePlan {
     planStatus: "draft",
     versions: [],
     review: emptyReview(),
+    createdAt: stamp,
+    updatedAt: stamp,
+  };
+}
+
+
+function newStudy(state: AppState): TradeStudy {
+  const stamp = new Date().toISOString();
+  return {
+    id: crypto.randomUUID(),
+    title: "",
+    studyDate: isoDateLocal(),
+    referenceDate: "",
+    asset: state.settings.assets[0] ?? "",
+    timeframe: "",
+    bias: "Neutro",
+    setupId: undefined,
+    objective: "",
+    marketContext: "",
+    keyLevels: "",
+    macroEvents: "",
+    evidenceAgainstThesis: "",
+    scenarios: [emptyScenario("A"), emptyScenario("B"), emptyScenario("C")],
+    behaviorPlan: "",
+    conclusion: "",
+    lessons: "",
+    status: "draft",
+    attachments: [],
     createdAt: stamp,
     updatedAt: stamp,
   };
@@ -229,6 +258,7 @@ function Dashboard({ state, onOpenPlans, onOpenSetups }: { state: AppState; onOp
       <div><strong>{state.rules.filter((r) => r.active).length}</strong><span>regras ativas</span></div>
       <div><strong>{state.setups.filter((s) => s.active).length}</strong><span>setups ativos</span></div>
       <div><strong>{frozen}</strong><span>planos congelados</span></div>
+      <div><strong>{state.studies.length}</strong><span>estudos registrados</span></div>
       <div><strong>{reviewed ? Math.round((followed / reviewed) * 100) : 0}%</strong><span>aderência integral</span></div>
     </div>
 
@@ -563,6 +593,168 @@ function PlanEditor({ initial, assets, setups, onPersist, onClose }: { initial: 
   </div>;
 }
 
+
+function StudyEditor({ initial, assets, setups, onSave, onClose }: {
+  initial: TradeStudy;
+  assets: string[];
+  setups: TradeSetup[];
+  onSave: (study: TradeStudy) => void;
+  onClose: () => void;
+}) {
+  const [draft, setDraft] = useState<TradeStudy>(() => structuredClone(initial));
+  const [message, setMessage] = useState("");
+
+  function patchScenario(id: string, next: Scenario) {
+    setDraft((d) => ({ ...d, scenarios: d.scenarios.map((s) => s.id === id ? next : s) }));
+  }
+
+  function applySetup() {
+    if (!draft.setupId) return;
+    const setup = setups.find((s) => s.id === draft.setupId);
+    if (!setup) return;
+    const a = draft.scenarios.find((scenario) => scenario.label === "A");
+    if (!a) return;
+    const nextA: Scenario = {
+      ...a,
+      title: a.title || setup.title,
+      trigger: setup.entryCriteria,
+      confirmation: setup.confirmation,
+      action: a.action || setup.description,
+      invalidation: setup.invalidation,
+      stop: setup.stopModel,
+      targets: setup.targetModel,
+      avoid: setup.avoid,
+    };
+    setDraft((d) => ({
+      ...d,
+      marketContext: d.marketContext || setup.marketContext,
+      behaviorPlan: d.behaviorPlan || setup.behaviorNotes,
+      scenarios: d.scenarios.map((scenario) => scenario.id === nextA.id ? nextA : scenario),
+    }));
+    setMessage("Setup aplicado ao estudo. Adapte os campos ao objetivo analítico.");
+  }
+
+  function save(close = false) {
+    if (!draft.title.trim()) return;
+    const completedAt = draft.status === "completed" ? (draft.completedAt || new Date().toISOString()) : undefined;
+    const next = { ...draft, completedAt, updatedAt: new Date().toISOString() };
+    onSave(next);
+    setDraft(next);
+    setMessage("Estudo salvo.");
+    if (close) onClose();
+  }
+
+  return <div className="panel plan-editor">
+    <div className="editor-head">
+      <div><span className="eyebrow">ESTUDO ANALÍTICO</span><h2>{draft.title || "Novo estudo"}</h2><p>Exercite leitura, formulação de hipóteses e tomada de decisão sem vincular o registro a uma operação futura.</p></div>
+      <span className={`badge ${draft.status === "completed" ? "ok" : "warning"}`}>{draft.status === "completed" ? "Concluído" : "Em andamento"}</span>
+    </div>
+
+    {message && <div className="notice">{message}</div>}
+
+    <div className="form-grid three">
+      <Field label="Título do estudo"><input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="Ex.: Reações do WIN à VWAP após gap de alta" /></Field>
+      <Field label="Data do estudo"><input type="date" value={draft.studyDate} onChange={(e) => setDraft({ ...draft, studyDate: e.target.value })} /></Field>
+      <Field label="Data de mercado analisada (opcional)"><input type="date" value={draft.referenceDate} onChange={(e) => setDraft({ ...draft, referenceDate: e.target.value })} /></Field>
+      <Field label="Ativo (opcional)"><input list="study-assets" value={draft.asset} onChange={(e) => setDraft({ ...draft, asset: e.target.value.toUpperCase() })} placeholder="Ex.: WINFUT" /><datalist id="study-assets">{assets.map((a) => <option key={a} value={a} />)}</datalist></Field>
+      <Field label="Timeframe / recorte"><input value={draft.timeframe} onChange={(e) => setDraft({ ...draft, timeframe: e.target.value })} placeholder="Ex.: 2 min; abertura; 10 pregões" /></Field>
+      <Field label="Viés / hipótese inicial"><select value={draft.bias} onChange={(e) => setDraft({ ...draft, bias: e.target.value as TradeStudy["bias"] })}><option>Alta</option><option>Baixa</option><option>Neutro</option></select></Field>
+    </div>
+
+    <div className="setup-apply">
+      <Field label="Setup de referência (opcional)"><select value={draft.setupId ?? ""} onChange={(e) => setDraft({ ...draft, setupId: e.target.value || undefined })}><option value="">Nenhum setup</option>{setups.filter((x) => x.active).map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}</select></Field>
+      <button onClick={applySetup} disabled={!draft.setupId}>Aplicar setup ao estudo</button>
+    </div>
+
+    <Field label="Pergunta / objetivo do estudo" hint="Defina o que você quer aprender, comparar ou testar antes de analisar os dados."><textarea rows={4} value={draft.objective} onChange={(e) => setDraft({ ...draft, objective: e.target.value })} placeholder="Ex.: Quero entender como o preço costuma reagir quando perde a VWAP depois de uma abertura compradora." /></Field>
+
+    <div className="form-grid two">
+      <Field label="Contexto de mercado"><textarea rows={6} value={draft.marketContext} onChange={(e) => setDraft({ ...draft, marketContext: e.target.value })} placeholder="Tendência, localização, volatilidade, fluxo, correlações, abertura…" /></Field>
+      <Field label="Níveis importantes"><textarea rows={6} value={draft.keyLevels} onChange={(e) => setDraft({ ...draft, keyLevels: e.target.value })} placeholder="VWAP, máxima/mínima, gaps, regiões de liquidez, suportes e resistências…" /></Field>
+      <Field label="Eventos / fatores relevantes"><textarea rows={4} value={draft.macroEvents} onChange={(e) => setDraft({ ...draft, macroEvents: e.target.value })} placeholder="Eventos macro, horário, vencimentos, leilões ou qualquer fator que altere a leitura." /></Field>
+      <Field label="Evidências contra minha hipótese / leitura"><textarea rows={4} value={draft.evidenceAgainstThesis} onChange={(e) => setDraft({ ...draft, evidenceAgainstThesis: e.target.value })} placeholder="Quais dados contradizem sua interpretação inicial?" /></Field>
+    </div>
+
+    <div className="scenario-grid">{draft.scenarios.map((scenario) => <ScenarioEditor key={scenario.id} scenario={scenario} onChange={(next) => patchScenario(scenario.id, next)} />)}</div>
+
+    <Field label="Como eu agiria / plano de decisão" hint="Mesmo sem intenção de operar, descreva qual seria a decisão correta caso você estivesse diante desse contexto em tempo real."><textarea rows={5} value={draft.behaviorPlan} onChange={(e) => setDraft({ ...draft, behaviorPlan: e.target.value })} placeholder="Ex.: Eu esperaria confirmação; não anteciparia o rompimento; reduziria risco em volatilidade anormal…" /></Field>
+
+    <div className="form-grid two">
+      <Field label="Conclusão analítica"><textarea rows={6} value={draft.conclusion} onChange={(e) => setDraft({ ...draft, conclusion: e.target.value })} placeholder="O que a análise mostrou? A hipótese inicial se sustentou? Em quais condições?" /></Field>
+      <Field label="Aprendizados e próximos estudos"><textarea rows={6} value={draft.lessons} onChange={(e) => setDraft({ ...draft, lessons: e.target.value })} placeholder="O que deve ser praticado, investigado novamente ou transformado em regra/setup?" /></Field>
+    </div>
+
+    <AttachmentField value={draft.attachments} onChange={(attachments) => setDraft({ ...draft, attachments })} title="Gráficos e imagens do estudo" />
+
+    <label className="check"><input type="checkbox" checked={draft.status === "completed"} onChange={(e) => setDraft({ ...draft, status: e.target.checked ? "completed" : "draft", completedAt: e.target.checked ? (draft.completedAt || new Date().toISOString()) : undefined })} /> Marcar estudo como concluído</label>
+
+    <div className="actions sticky-actions"><button className="primary" onClick={() => save(false)}>Salvar</button><button onClick={() => save(true)}>Salvar e fechar</button><button onClick={onClose}>Fechar sem salvar mudanças atuais</button></div>
+  </div>;
+}
+
+function buildStudyText(study: TradeStudy) {
+  const labels = activeLanguage === "en" ? {
+    title: "ANALYTICAL STUDY", date: "Study date", reference: "Market date", asset: "Asset", timeframe: "Timeframe", bias: "Initial bias",
+    objective: "QUESTION / OBJECTIVE", context: "MARKET CONTEXT", levels: "KEY LEVELS", events: "EVENTS / FACTORS",
+    counter: "EVIDENCE AGAINST THE HYPOTHESIS", scenario: "SCENARIO", if: "If", confirmation: "Confirmation", action: "Decision",
+    invalidation: "Invalidation", stop: "Stop / risk", targets: "Targets / management", avoid: "Avoid", behavior: "HOW I WOULD ACT",
+    conclusion: "ANALYTICAL CONCLUSION", lessons: "LESSONS / NEXT STUDIES",
+  } : activeLanguage === "es" ? {
+    title: "ESTUDIO ANALÍTICO", date: "Fecha del estudio", reference: "Fecha de mercado", asset: "Activo", timeframe: "Timeframe", bias: "Sesgo inicial",
+    objective: "PREGUNTA / OBJETIVO", context: "CONTEXTO DE MERCADO", levels: "NIVELES IMPORTANTES", events: "EVENTOS / FACTORES",
+    counter: "EVIDENCIAS CONTRA LA HIPÓTESIS", scenario: "ESCENARIO", if: "Si", confirmation: "Confirmación", action: "Decisión",
+    invalidation: "Invalidación", stop: "Stop / riesgo", targets: "Objetivos / gestión", avoid: "Evitar", behavior: "CÓMO ACTUARÍA",
+    conclusion: "CONCLUSIÓN ANALÍTICA", lessons: "APRENDIZAJES / PRÓXIMOS ESTUDIOS",
+  } : {
+    title: "ESTUDO ANALÍTICO", date: "Data do estudo", reference: "Data de mercado", asset: "Ativo", timeframe: "Timeframe", bias: "Viés inicial",
+    objective: "PERGUNTA / OBJETIVO", context: "CONTEXTO DE MERCADO", levels: "NÍVEIS IMPORTANTES", events: "EVENTOS / FATORES",
+    counter: "EVIDÊNCIAS CONTRA A HIPÓTESE", scenario: "CENÁRIO", if: "Se", confirmation: "Confirmação", action: "Decisão",
+    invalidation: "Invalidação", stop: "Stop / risco", targets: "Alvos / gestão", avoid: "Evitar", behavior: "COMO EU AGIRIA",
+    conclusion: "CONCLUSÃO ANALÍTICA", lessons: "APRENDIZADOS / PRÓXIMOS ESTUDOS",
+  };
+  const scenarios = study.scenarios.map((scenario) => `${labels.scenario} ${scenario.label} — ${scenario.title}\n${labels.if}: ${scenario.trigger}\n${labels.confirmation}: ${scenario.confirmation}\n${labels.action}: ${scenario.action}\n${labels.invalidation}: ${scenario.invalidation}\n${labels.stop}: ${scenario.stop}\n${labels.targets}: ${scenario.targets}\n${labels.avoid}: ${scenario.avoid}`).join("\n\n");
+  return `${labels.title} — ${study.title}\n${labels.date}: ${fmtDate(study.studyDate)}\n${labels.reference}: ${study.referenceDate ? fmtDate(study.referenceDate) : "—"}\n${labels.asset}: ${study.asset || "—"}\n${labels.timeframe}: ${study.timeframe || "—"}\n${labels.bias}: ${translateUi(study.bias, activeLanguage)}\n\n${labels.objective}\n${study.objective}\n\n${labels.context}\n${study.marketContext}\n\n${labels.levels}\n${study.keyLevels}\n\n${labels.events}\n${study.macroEvents}\n\n${labels.counter}\n${study.evidenceAgainstThesis}\n\n${scenarios}\n\n${labels.behavior}\n${study.behaviorPlan}\n\n${labels.conclusion}\n${study.conclusion}\n\n${labels.lessons}\n${study.lessons}\n`;
+}
+
+function StudiesPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
+  const [editing, setEditing] = useState<TradeStudy | null>(null);
+  const [filter, setFilter] = useState("");
+  const studies = useMemo(
+    () => [...state.studies].filter((study) => {
+      const query = filter.toLowerCase();
+      return !query || study.title.toLowerCase().includes(query) || study.asset.toLowerCase().includes(query) || study.studyDate.includes(filter) || study.timeframe.toLowerCase().includes(query);
+    }).sort((a, b) => b.studyDate.localeCompare(a.studyDate)),
+    [state.studies, filter],
+  );
+
+  function persist(study: TradeStudy) {
+    setState((current) => ({
+      ...current,
+      studies: current.studies.some((x) => x.id === study.id) ? current.studies.map((x) => x.id === study.id ? study : x) : [study, ...current.studies],
+    }));
+    setEditing(study);
+  }
+
+  if (editing) return <section className="page"><StudyEditor initial={editing} assets={state.settings.assets} setups={state.setups} onSave={persist} onClose={() => setEditing(null)} /></section>;
+
+  return <section className="page">
+    <div className="page-heading"><div><span className="eyebrow">TREINO ANALÍTICO</span><h1>Estudos</h1><p>Crie análises independentes de operações futuras para exercitar leitura de contexto, hipóteses, cenários, invalidação e tomada de decisão.</p></div><button className="primary" onClick={() => setEditing(newStudy(state))}>+ Novo estudo</button></div>
+    <div className="toolbar"><input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filtrar por título, ativo, timeframe ou data…" /><span>{studies.length} estudo(s)</span></div>
+    <div className="plan-list">{studies.map((study) => <article className="plan-card" key={study.id}>
+      <div className="plan-date"><strong>{fmtDate(study.studyDate)}</strong><span>{study.asset || "Estudo geral"}</span></div>
+      <div className="plan-main">
+        <div className="card-top"><div className="badges"><span className={`badge bias-${study.bias.toLowerCase()}`}>Viés {study.bias}</span>{study.timeframe && <span className="badge">{study.timeframe}</span>}</div><span className={`badge ${study.status === "completed" ? "ok" : "warning"}`}>{study.status === "completed" ? "Concluído" : "Em andamento"}</span></div>
+        <h3>{study.title}</h3>
+        <p>{study.objective || study.marketContext || "Objetivo ainda não descrito."}</p>
+        {study.evidenceAgainstThesis && <div className="counter-mini"><b>Contra a hipótese:</b> {study.evidenceAgainstThesis}</div>}
+        <div className="scenario-pills">{study.scenarios.map((scenario) => <span key={scenario.id}>{scenario.label}: {scenario.title || "não definido"}</span>)}</div>
+      </div>
+      <div className="vertical-actions"><button onClick={() => setEditing(structuredClone(study))}>Abrir / editar</button><button onClick={() => downloadText(`estudo-${study.asset || "geral"}-${study.studyDate}.txt`, buildStudyText(study))}>Exportar texto</button><button className="danger" onClick={() => { if (confirm(translateUi("Remover este estudo?", activeLanguage))) setState((current) => ({ ...current, studies: current.studies.filter((x) => x.id !== study.id) })); }}>Remover</button></div>
+    </article>)}</div>
+    {!studies.length && <div className="empty">Nenhum estudo encontrado. Crie um estudo para exercitar uma leitura de mercado, hipótese ou setup.</div>}
+  </section>;
+}
+
 function PlansPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
   const [editing, setEditing] = useState<TradePlan | null>(null);
   const [filter, setFilter] = useState("");
@@ -726,7 +918,7 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
         <Field label="Idioma da interface"><select value={settings.language} onChange={(e) => patch({ language: e.target.value as "pt-BR" | "en" | "es" })}><option value="pt-BR">Português (Brasil)</option><option value="en">English</option><option value="es">Español</option></select></Field>
         <AttachmentField value={settings.attachments} onChange={(attachments) => patch({ attachments })} title="Imagens de referência geral" />
       </div>
-      <div className="panel"><h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v3 inclui biblioteca de setups, histórico de versões congeladas e preferência de idioma.</p>
+      <div className="panel"><h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v4 inclui planos, estudos, biblioteca de setups, histórico de versões congeladas e preferência de idioma.</p>
         <div className="stack-actions"><button className="primary" onClick={() => exportBackup(state)}>Exportar backup JSON</button><button onClick={() => fileRef.current?.click()}>Importar backup JSON</button><input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => void importFile(e.target.files?.[0])} /></div>
         {message && <div className="notice">{message}</div>}
         <div className="danger-zone"><h3>Zona de risco</h3><p>Apaga todos os dados deste navegador. Exporte um backup antes, se necessário.</p><button className="danger" onClick={() => { if (confirm(translateUi("Apagar todos os dados locais? Esta ação não pode ser desfeita.", activeLanguage))) { localStorage.removeItem(STORAGE_KEY); const fresh = initialState(); setState(fresh); setAssetsText(fresh.settings.assets.join(", ")); } }}>Apagar todos os dados</button></div>
@@ -759,6 +951,7 @@ export default function App() {
     ["rules", "Sistema de trade", "◆"],
     ["setups", "Biblioteca de setups", "▦"],
     ["plans", "Planos de trade", "▤"],
+    ["studies", "Estudos", "▥"],
     ["settings", "Configurações", "⚙"],
   ];
 
@@ -774,6 +967,7 @@ export default function App() {
       {tab === "rules" && <RulesPage state={state} setState={setState} />}
       {tab === "setups" && <SetupsPage state={state} setState={setState} />}
       {tab === "plans" && <PlansPage state={state} setState={setState} />}
+      {tab === "studies" && <StudiesPage state={state} setState={setState} />}
       {tab === "settings" && <SettingsPage state={state} setState={setState} />}
     </main>
   </div>;
