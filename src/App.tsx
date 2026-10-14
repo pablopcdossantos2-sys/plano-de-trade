@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { prepareImage } from "./images";
 import { exportBackup, initialState, loadState, parseBackup, saveState, STORAGE_KEY } from "./storage";
-import { localeForLanguage, useInterfaceLanguage } from "./i18n";
+import { localeForLanguage, translateUi, useInterfaceLanguage, type UiLanguage } from "./i18n";
 import type {
   AppState,
   Attachment,
@@ -26,6 +26,7 @@ const defaultChecklist = [
 ];
 
 let activeLocale = "pt-BR";
+let activeLanguage: UiLanguage = "pt-BR";
 
 function isoDateLocal(date = new Date()) {
   const offset = date.getTimezoneOffset() * 60_000;
@@ -348,7 +349,7 @@ function SetupsPage({ state, setState }: { state: AppState; setState: React.Disp
       <div className="why"><b>Entrada:</b> {setup.entryCriteria}</div>
       {setup.invalidation && <div className="why"><b>Invalida quando:</b> {setup.invalidation}</div>}
       {!!setup.attachments.length && <div className="mini-images">{setup.attachments.slice(0, 3).map((img) => <img key={img.id} src={img.dataUrl} alt={img.name} />)}</div>}
-      <div className="card-actions"><button onClick={() => edit(setup)}>Editar</button><button className="danger" onClick={() => { if (confirm("Remover este setup?")) setState((s) => ({ ...s, setups: s.setups.filter((x) => x.id !== setup.id) })); }}>Remover</button></div>
+      <div className="card-actions"><button onClick={() => edit(setup)}>Editar</button><button className="danger" onClick={() => { if (confirm(translateUi("Remover este setup?", activeLanguage))) setState((s) => ({ ...s, setups: s.setups.filter((x) => x.id !== setup.id) })); }}>Remover</button></div>
     </article>)}</div>
     {!state.setups.length && <div className="empty">Nenhum setup cadastrado. Registre primeiro os padrões que você realmente deseja repetir e reconhecer.</div>}
   </section>;
@@ -589,7 +590,7 @@ function PlansPage({ state, setState }: { state: AppState; setState: React.Dispa
         {p.evidenceAgainstThesis && <div className="counter-mini"><b>Contra a tese:</b> {p.evidenceAgainstThesis}</div>}
         <div className="scenario-pills">{p.scenarios.map((s) => <span key={s.id}>{s.label}: {s.title || "não definido"}</span>)}</div>
       </div>
-      <div className="vertical-actions"><button onClick={() => setEditing(structuredClone(p))}>Abrir / editar</button><button onClick={() => downloadText(`plano-${p.asset}-${p.tradingDate}.txt`, buildPlanText(p))}>Exportar texto</button><button className="danger" onClick={() => { if (confirm("Remover este plano?")) setState((s) => ({ ...s, plans: s.plans.filter((x) => x.id !== p.id) })); }}>Remover</button></div>
+      <div className="vertical-actions"><button onClick={() => setEditing(structuredClone(p))}>Abrir / editar</button><button onClick={() => downloadText(`plano-${p.asset}-${p.tradingDate}.txt`, buildPlanText(p))}>Exportar texto</button><button className="danger" onClick={() => { if (confirm(translateUi("Remover este plano?", activeLanguage))) setState((s) => ({ ...s, plans: s.plans.filter((x) => x.id !== p.id) })); }}>Remover</button></div>
     </article>)}</div>
     {!plans.length && <div className="empty">Nenhum plano encontrado. Crie um plano para o próximo pregão.</div>}
   </section>;
@@ -597,10 +598,101 @@ function PlansPage({ state, setState }: { state: AppState; setState: React.Dispa
 
 function buildPlanText(p: TradePlan) {
   const reference = latestFrozenVersion(p);
-  const source = reference ? `VERSÃO CONGELADA v${reference.version} — ${fmtDateTime(reference.frozenAt)}` : "RASCUNHO ATUAL — SEM VERSÃO CONGELADA";
   const base = reference ?? currentReference(p);
-  const scenarios = base.scenarios.map((s) => `CENÁRIO ${s.label} — ${s.title}\nSe: ${s.trigger}\nConfirmação: ${s.confirmation}\nEntão: ${s.action}\nInvalidação: ${s.invalidation}\nStop/risco: ${s.stop}\nAlvos: ${s.targets}\nEvitar: ${s.avoid}`).join("\n\n");
-  return `PLANO DE TRADE — ${base.asset} — ${fmtDate(base.tradingDate)}\n${source}\n\nViés: ${base.bias}\nRisco máximo: ${base.maxRisk}\nMáximo de operações: ${base.maxTrades}\n\nCONTEXTO\n${base.marketContext}\n\nNÍVEIS\n${base.keyLevels}\n\nEVENTOS\n${base.macroEvents}\n\nEVIDÊNCIAS CONTRA A TESE\n${base.evidenceAgainstThesis}\n\nNÃO OPERAR SE\n${base.noTradeConditions}\n\n${scenarios}\n\nPLANO COMPORTAMENTAL\n${base.behaviorPlan}\n\nMERCADO REAL\n${p.review.happened}\n\nMINHA EXECUÇÃO\n${p.review.executionSummary}\n\nCenário observado: ${p.review.observedScenario}\nSeguiu o plano: ${p.review.followedPlan}\nDesvios: ${p.review.deviations}\nResultado: ${p.review.result}\nAprendizado: ${p.review.lessons}\n`;
+
+  const labels = activeLanguage === "en" ? {
+    frozen: "FROZEN VERSION",
+    draft: "CURRENT DRAFT — NO FROZEN VERSION",
+    title: "TRADE PLAN",
+    bias: "Bias",
+    maxRisk: "Maximum risk",
+    maxTrades: "Maximum trades",
+    context: "CONTEXT",
+    levels: "LEVELS",
+    events: "EVENTS",
+    counter: "EVIDENCE AGAINST THE THESIS",
+    noTrade: "DO NOT TRADE IF",
+    scenario: "SCENARIO",
+    if: "If",
+    confirmation: "Confirmation",
+    then: "Then",
+    invalidation: "Invalidation",
+    stop: "Stop/risk",
+    targets: "Targets",
+    avoid: "Avoid",
+    behavior: "BEHAVIOR PLAN",
+    market: "ACTUAL MARKET",
+    execution: "MY EXECUTION",
+    observed: "Observed scenario",
+    followed: "Followed the plan",
+    deviations: "Deviations",
+    result: "Result",
+    lessons: "Lesson",
+  } : activeLanguage === "es" ? {
+    frozen: "VERSIÓN CONGELADA",
+    draft: "BORRADOR ACTUAL — SIN VERSIÓN CONGELADA",
+    title: "PLAN DE TRADING",
+    bias: "Sesgo",
+    maxRisk: "Riesgo máximo",
+    maxTrades: "Máximo de operaciones",
+    context: "CONTEXTO",
+    levels: "NIVELES",
+    events: "EVENTOS",
+    counter: "EVIDENCIAS CONTRA LA TESIS",
+    noTrade: "NO OPERAR SI",
+    scenario: "ESCENARIO",
+    if: "Si",
+    confirmation: "Confirmación",
+    then: "Entonces",
+    invalidation: "Invalidación",
+    stop: "Stop/riesgo",
+    targets: "Objetivos",
+    avoid: "Evitar",
+    behavior: "PLAN CONDUCTUAL",
+    market: "MERCADO REAL",
+    execution: "MI EJECUCIÓN",
+    observed: "Escenario observado",
+    followed: "Seguí el plan",
+    deviations: "Desviaciones",
+    result: "Resultado",
+    lessons: "Aprendizaje",
+  } : {
+    frozen: "VERSÃO CONGELADA",
+    draft: "RASCUNHO ATUAL — SEM VERSÃO CONGELADA",
+    title: "PLANO DE TRADE",
+    bias: "Viés",
+    maxRisk: "Risco máximo",
+    maxTrades: "Máximo de operações",
+    context: "CONTEXTO",
+    levels: "NÍVEIS",
+    events: "EVENTOS",
+    counter: "EVIDÊNCIAS CONTRA A TESE",
+    noTrade: "NÃO OPERAR SE",
+    scenario: "CENÁRIO",
+    if: "Se",
+    confirmation: "Confirmação",
+    then: "Então",
+    invalidation: "Invalidação",
+    stop: "Stop/risco",
+    targets: "Alvos",
+    avoid: "Evitar",
+    behavior: "PLANO COMPORTAMENTAL",
+    market: "MERCADO REAL",
+    execution: "MINHA EXECUÇÃO",
+    observed: "Cenário observado",
+    followed: "Seguiu o plano",
+    deviations: "Desvios",
+    result: "Resultado",
+    lessons: "Aprendizado",
+  };
+
+  const source = reference ? `${labels.frozen} v${reference.version} — ${fmtDateTime(reference.frozenAt)}` : labels.draft;
+  const scenarios = base.scenarios.map((s) => `${labels.scenario} ${s.label} — ${s.title}\n${labels.if}: ${s.trigger}\n${labels.confirmation}: ${s.confirmation}\n${labels.then}: ${s.action}\n${labels.invalidation}: ${s.invalidation}\n${labels.stop}: ${s.stop}\n${labels.targets}: ${s.targets}\n${labels.avoid}: ${s.avoid}`).join("\n\n");
+  const localizedBias = translateUi(base.bias, activeLanguage);
+  const localizedObserved = translateUi(p.review.observedScenario, activeLanguage);
+  const localizedFollowed = translateUi(p.review.followedPlan, activeLanguage);
+
+  return `${labels.title} — ${base.asset} — ${fmtDate(base.tradingDate)}\n${source}\n\n${labels.bias}: ${localizedBias}\n${labels.maxRisk}: ${base.maxRisk}\n${labels.maxTrades}: ${base.maxTrades}\n\n${labels.context}\n${base.marketContext}\n\n${labels.levels}\n${base.keyLevels}\n\n${labels.events}\n${base.macroEvents}\n\n${labels.counter}\n${base.evidenceAgainstThesis}\n\n${labels.noTrade}\n${base.noTradeConditions}\n\n${scenarios}\n\n${labels.behavior}\n${base.behaviorPlan}\n\n${labels.market}\n${p.review.happened}\n\n${labels.execution}\n${p.review.executionSummary}\n\n${labels.observed}: ${localizedObserved}\n${labels.followed}: ${localizedFollowed}\n${labels.deviations}: ${p.review.deviations}\n${labels.result}: ${p.review.result}\n${labels.lessons}: ${p.review.lessons}\n`;
 }
 
 function SettingsPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
@@ -637,7 +729,7 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
       <div className="panel"><h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v3 inclui biblioteca de setups, histórico de versões congeladas e preferência de idioma.</p>
         <div className="stack-actions"><button className="primary" onClick={() => exportBackup(state)}>Exportar backup JSON</button><button onClick={() => fileRef.current?.click()}>Importar backup JSON</button><input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => void importFile(e.target.files?.[0])} /></div>
         {message && <div className="notice">{message}</div>}
-        <div className="danger-zone"><h3>Zona de risco</h3><p>Apaga todos os dados deste navegador. Exporte um backup antes, se necessário.</p><button className="danger" onClick={() => { if (confirm("Apagar todos os dados locais? Esta ação não pode ser desfeita.")) { localStorage.removeItem(STORAGE_KEY); const fresh = initialState(); setState(fresh); setAssetsText(fresh.settings.assets.join(", ")); } }}>Apagar todos os dados</button></div>
+        <div className="danger-zone"><h3>Zona de risco</h3><p>Apaga todos os dados deste navegador. Exporte um backup antes, se necessário.</p><button className="danger" onClick={() => { if (confirm(translateUi("Apagar todos os dados locais? Esta ação não pode ser desfeita.", activeLanguage))) { localStorage.removeItem(STORAGE_KEY); const fresh = initialState(); setState(fresh); setAssetsText(fresh.settings.assets.join(", ")); } }}>Apagar todos os dados</button></div>
       </div>
     </div>
   </section>;
@@ -648,8 +740,9 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [saveError, setSaveError] = useState("");
 
-  activeLocale = localeForLanguage(state.settings.language);
-  useInterfaceLanguage(state.settings.language);
+  activeLanguage = state.settings.language;
+  activeLocale = localeForLanguage(activeLanguage);
+  useInterfaceLanguage(activeLanguage);
 
   useEffect(() => {
     document.documentElement.dataset.theme = state.settings.theme;
