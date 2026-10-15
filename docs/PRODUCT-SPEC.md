@@ -227,6 +227,26 @@ Recursos:
 
 A revisão pós-pregão passa a armazenar `executionOrigin`, `violatedRuleIds`, `readingQuality` e `executionQuality`. Dados anteriores são migrados com valores vazios/zero, sem avaliações retroativas inventadas.
 
+### 3.13 Integração com diário de trades
+
+A aplicação suporta importação local genérica de execuções em JSON ou CSV, sem depender de um fornecedor específico.
+
+Cada plano possui um `sessionId` estável. Cada trade importado pode armazenar `planId`, `sessionId` e cenário A/B/C.
+
+Recursos:
+
+- aliases de colunas em português e inglês;
+- data e ativo como campos mínimos;
+- vínculo automático quando existe exatamente um plano para a mesma data + ativo;
+- correção manual do vínculo;
+- associação manual a cenário A/B/C;
+- preenchimento não destrutivo do resumo da execução e resultado quando o plano vinculado ainda possui esses campos vazios;
+- deduplicação por ID externo quando disponível ou por combinação de dados objetivos;
+- detecção de trade sem cenário previamente planejado;
+- relatório conjunto “Planejei × operei × registrei” combinando processo e resultado.
+
+A especificação detalhada do formato fica em `docs/JOURNAL-INTEGRATION.md`.
+
 ## 4. Persistência e portabilidade
 
 ### Web MVP
@@ -235,7 +255,7 @@ A revisão pós-pregão passa a armazenar `executionOrigin`, `violatedRuleIds`, 
 - imagens em Data URL compactadas;
 - backup JSON completo.
 
-### Schema v6
+### Schema v7
 
 Mantém os recursos anteriores e adiciona:
 
@@ -245,12 +265,14 @@ Mantém os recursos anteriores e adiciona:
 - convicção da tese e critério para mudança de opinião;
 - score e pendências de preparação preservados nos novos snapshots;
 - revisão estruturada com origem da execução, regras violadas, qualidade da leitura e qualidade da execução;
+- `sessionId` estável por plano;
+- `journalTrades: JournalTrade[]` para execuções importadas e seus vínculos;
 - armazenamento separado entre estudos e planos operacionais;
 - `language` continua suportando `pt-BR`, `en` e `es`;
 - migração automática de dados v1, v2 e v3;
 - estudos incluídos no backup JSON completo.
 
-### Migração v1/v2/v3/v4/v5 → v6
+### Migração v1/v2/v3/v4/v5/v6 → v7
 
 - regras são preservadas;
 - planos são preservados;
@@ -262,6 +284,7 @@ Mantém os recursos anteriores e adiciona:
 - checklists antigos em texto são migrados para itens estruturados inicialmente não concluídos;
 - backups v4 recebem os novos campos de qualidade da preparação sem inventar scores históricos para snapshots antigos;
 - backups v5 recebem os novos campos históricos da revisão vazios/zero, sem inferir violações, origem ou notas;
+- backups v6 recebem `sessionId` gerado para cada plano e `journalTrades: []`, sem inventar execuções históricas;
 - planos antigos continuam como rascunho, sem snapshots retroativos inventados.
 
 ## 5. Próximas métricas úteis
