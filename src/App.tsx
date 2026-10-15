@@ -6,7 +6,9 @@ import { checkDesktopUpdate, desktopVersion, installDesktopUpdate, isDesktopApp,
 import type {
   AppState,
   Attachment,
+  ChecklistItem,
   PlanReview,
+  PlanTemplate,
   PlanSnapshot,
   RuleCategory,
   Scenario,
@@ -26,6 +28,10 @@ const defaultChecklist = [
   "Defini risco máximo e número máximo de trades",
   "Procurei evidências que contradizem minha tese principal",
 ];
+
+function checklistFromTexts(items: string[]): ChecklistItem[] {
+  return items.map((text) => ({ id: crypto.randomUUID(), text, checked: false }));
+}
 
 let activeLocale = "pt-BR";
 let activeLanguage: UiLanguage = "pt-BR";
@@ -85,10 +91,105 @@ function newPlan(state: AppState): TradePlan {
     maxRisk: state.settings.defaultMaxRisk,
     maxTrades: state.settings.defaultMaxTrades,
     noTradeConditions: "",
-    checklist: [...defaultChecklist],
+    checklist: checklistFromTexts(defaultChecklist),
     scenarios: [emptyScenario("A"), emptyScenario("B"), emptyScenario("C")],
     behaviorPlan: "",
+    thesisConviction: "",
+    changeMindCondition: "",
     attachments: [],
+    planStatus: "draft",
+    versions: [],
+    review: emptyReview(),
+    createdAt: stamp,
+    updatedAt: stamp,
+  };
+}
+
+
+type ReadinessResult = {
+  score: number;
+  issues: string[];
+  criticalIssues: string[];
+};
+
+function planReadiness(plan: Pick<TradePlan, "marketContext" | "maxRisk" | "noTradeConditions" | "evidenceAgainstThesis" | "changeMindCondition" | "checklist" | "scenarios" | "behaviorPlan" | "keyLevels">): ReadinessResult {
+  const checks: Array<{ ok: boolean; issue: string; critical?: boolean }> = [
+    { ok: !!plan.marketContext.trim(), issue: "Contexto de mercado não descrito." },
+    { ok: !!plan.keyLevels.trim(), issue: "Níveis importantes não registrados." },
+    { ok: !!plan.maxRisk.trim(), issue: "Risco máximo não definido.", critical: true },
+    { ok: !!plan.noTradeConditions.trim(), issue: "Condições para não operar não definidas.", critical: true },
+    { ok: !!plan.evidenceAgainstThesis.trim(), issue: "Contraprova da tese não registrada.", critical: true },
+    { ok: !!plan.changeMindCondition.trim(), issue: "Não foi definido o que faria você mudar de opinião.", critical: true },
+    { ok: !!plan.behaviorPlan.trim(), issue: "Plano comportamental não preenchido." },
+    { ok: plan.checklist.length > 0 && plan.checklist.every((item) => item.text.trim() && item.checked), issue: "Checklist pré-mercado ainda possui itens pendentes.", critical: true },
+    { ok: plan.scenarios.some((scenario) => scenario.title.trim() && scenario.trigger.trim() && scenario.action.trim()), issue: "Nenhum cenário possui hipótese, gatilho e ação completos.", critical: true },
+    { ok: plan.scenarios.filter((scenario) => scenario.title.trim() || scenario.trigger.trim() || scenario.action.trim()).every((scenario) => !!scenario.invalidation.trim()), issue: "Há cenário utilizado sem critério de invalidação.", critical: true },
+  ];
+
+  const completed = checks.filter((item) => item.ok).length;
+  return {
+    score: Math.round((completed / checks.length) * 100),
+    issues: checks.filter((item) => !item.ok).map((item) => item.issue),
+    criticalIssues: checks.filter((item) => !item.ok && item.critical).map((item) => item.issue),
+  };
+}
+
+function templateFromPlan(plan: TradePlan, title: string): PlanTemplate {
+  const stamp = new Date().toISOString();
+  return {
+    id: crypto.randomUUID(),
+    title,
+    asset: plan.asset,
+    setupId: plan.setupId,
+    bias: plan.bias,
+    thesisConviction: plan.thesisConviction,
+    marketContext: plan.marketContext,
+    keyLevels: plan.keyLevels,
+    macroEvents: plan.macroEvents,
+    evidenceAgainstThesis: plan.evidenceAgainstThesis,
+    changeMindCondition: plan.changeMindCondition,
+    maxRisk: plan.maxRisk,
+    maxTrades: plan.maxTrades,
+    noTradeConditions: plan.noTradeConditions,
+    checklist: structuredClone(plan.checklist).map((item) => ({ ...item, id: crypto.randomUUID(), checked: false })),
+    scenarios: structuredClone(plan.scenarios).map((scenario) => ({ ...scenario, id: crypto.randomUUID() })),
+    behaviorPlan: plan.behaviorPlan,
+    createdAt: stamp,
+    updatedAt: stamp,
+  };
+}
+
+function planFromTemplate(state: AppState, template: PlanTemplate): TradePlan {
+  const plan = newPlan(state);
+  return {
+    ...plan,
+    asset: template.asset || plan.asset,
+    setupId: template.setupId,
+    bias: template.bias,
+    thesisConviction: template.thesisConviction,
+    marketContext: template.marketContext,
+    keyLevels: template.keyLevels,
+    macroEvents: template.macroEvents,
+    evidenceAgainstThesis: template.evidenceAgainstThesis,
+    changeMindCondition: template.changeMindCondition,
+    maxRisk: template.maxRisk || plan.maxRisk,
+    maxTrades: template.maxTrades,
+    noTradeConditions: template.noTradeConditions,
+    checklist: structuredClone(template.checklist).map((item) => ({ ...item, id: crypto.randomUUID(), checked: false })),
+    scenarios: structuredClone(template.scenarios).map((scenario) => ({ ...scenario, id: crypto.randomUUID() })),
+    behaviorPlan: template.behaviorPlan,
+  };
+}
+
+function duplicatePlan(plan: TradePlan): TradePlan {
+  const stamp = new Date().toISOString();
+  return {
+    ...structuredClone(plan),
+    id: crypto.randomUUID(),
+    planDate: isoDateLocal(),
+    tradingDate: tomorrow(),
+    checklist: plan.checklist.map((item) => ({ ...item, id: crypto.randomUUID(), checked: false })),
+    scenarios: plan.scenarios.map((scenario) => ({ ...scenario, id: crypto.randomUUID() })),
     planStatus: "draft",
     versions: [],
     review: emptyReview(),
@@ -186,6 +287,10 @@ function snapshotFromPlan(plan: TradePlan, version: number): PlanSnapshot {
     checklist: structuredClone(plan.checklist),
     scenarios: structuredClone(plan.scenarios),
     behaviorPlan: plan.behaviorPlan,
+    thesisConviction: plan.thesisConviction,
+    changeMindCondition: plan.changeMindCondition,
+    readinessScore: planReadiness(plan).score,
+    readinessIssues: planReadiness(plan).issues,
     attachments: structuredClone(plan.attachments),
   };
 }
