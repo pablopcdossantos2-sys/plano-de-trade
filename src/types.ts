@@ -110,6 +110,7 @@ export type PlanSnapshot = {
 
 export type TradePlan = {
   id: string;
+  sessionId: string;
   planDate: string;
   tradingDate: string;
   asset: string;
@@ -159,6 +160,26 @@ export type PlanTemplate = {
 };
 
 
+export type JournalTrade = {
+  id: string;
+  externalId: string;
+  tradingDate: string;
+  asset: string;
+  side: string;
+  entryTime: string;
+  exitTime: string;
+  entryPrice: string;
+  exitPrice: string;
+  quantity: string;
+  result: string;
+  notes: string;
+  planId?: string;
+  sessionId?: string;
+  scenarioLabel: "" | "A" | "B" | "C";
+  importSource: string;
+  importedAt: string;
+};
+
 export type TradeStudy = {
   id: string;
   title: string;
@@ -200,6 +221,7 @@ export type AppState = {
   setups: TradeSetup[];
   plans: TradePlan[];
   planTemplates: PlanTemplate[];
+  journalTrades: JournalTrade[];
   studies: TradeStudy[];
   settings: Settings;
   updatedAt: string;
