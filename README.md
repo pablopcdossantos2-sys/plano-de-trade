@@ -15,7 +15,7 @@ A ferramenta não pretende prever o mercado. Ela organiza o processo decisório 
 3. **O que farei se o cenário A, B ou C se materializar?**
 4. **Depois do pregão, o que o mercado fez, o que eu fiz e quanto respeitei o plano original?**
 
-## Funcionalidades atuais — v0.9
+## Funcionalidades atuais — v0.10
 
 ### Sistema de trade
 
@@ -112,6 +112,18 @@ Na seção **Histórico**, é possível importar execuções em **JSON ou CSV** 
 
 Formato e exemplos: [`docs/JOURNAL-INTEGRATION.md`](docs/JOURNAL-INTEGRATION.md).
 
+### Treinamento deliberado
+
+A seção **Treinamento** transforma o histórico em exercícios práticos:
+
+- Replay de planos congelados sem mostrar inicialmente o desfecho;
+- revisita automática de planos com baixa aderência;
+- exercícios baseados nas regras que o trader mais viola;
+- comparação **“o que pensei naquela época” × “como interpreto agora”**;
+- biblioteca pessoal de exemplos **corretos e incorretos** por setup.
+
+No Replay, o mercado real e a execução original só aparecem depois que o trader registra sua nova decisão e leitura.
+
 ### Aplicativo desktop
 
 O projeto possui base em **Tauri 2** para distribuição como aplicativo Windows.
@@ -136,7 +148,7 @@ Detalhes de compilação e publicação: [`docs/DESKTOP.md`](docs/DESKTOP.md).
 - imagens compactadas;
 - backup completo em JSON;
 - restauração de backups;
-- migração automática de schemas antigos para o **schema v7**;
+- migração automática de schemas antigos para o **schema v8**;
 - tema claro/escuro;
 - interface em Português (Brasil), English e Español.
 
