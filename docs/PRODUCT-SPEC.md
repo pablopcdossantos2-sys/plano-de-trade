@@ -1,8 +1,8 @@
-# Product Spec — Plano de Trade
+# Product Spec — Trade Blueprint
 
 ## 1. Propósito
 
-O Plano de Trade é uma ferramenta de preparação e revisão deliberada para traders. Seu objetivo principal não é medir apenas P&L, mas melhorar a qualidade do processo decisório antes, durante e depois do pregão.
+O Trade Blueprint é uma ferramenta de preparação e revisão deliberada para traders. Seu objetivo principal não é medir apenas P&L, mas melhorar a qualidade do processo decisório antes, durante e depois do pregão.
 
 A ferramenta deve ajudar o usuário a:
 
@@ -368,7 +368,7 @@ A interface deve exibir versão instalada, disponibilidade de nova versão, nota
 
 ### 6.3 Persistência desktop
 
-Na primeira fase Tauri, a aplicação continua compatível com a persistência web existente.
+A aplicação mantém compatibilidade com backups da persistência web existente.
 
 A evolução seguinte deve introduzir SQLite com:
 
@@ -390,7 +390,8 @@ A implementação inicial mantém o estado da aplicação como JSON versionado d
 
 Requisitos implementados:
 
-- migração automática do estado web quando o banco desktop ainda está vazio;
+- bootstrap automático do estado disponível no WebView desktop quando o banco ainda está vazio;
+- migração de dados de um navegador externo por exportação/importação do backup JSON;
 - salvamento com debounce via IPC;
 - backup automático diário;
 - retenção dos 10 backups automáticos mais recentes;
