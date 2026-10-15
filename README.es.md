@@ -1,4 +1,4 @@
-# Plan de Trading
+# Trade Blueprint
 
 **Lee esto en otros idiomas:** [Português](README.md) · [English](README.en.md)
 
@@ -109,22 +109,6 @@ La sección **Entrenamiento** convierte el historial en ejercicios prácticos:
 
 En el Replay, el mercado real y la ejecución original solo aparecen después de registrar una nueva decisión y lectura.
 
-### Aplicación de escritorio
-
-El proyecto posee una base en **Tauri 2** para distribución en Windows, con:
-
-- instalador NSIS;
-- ejecución en instancia única;
-- panel de actualización dentro de la aplicación;
-- infraestructura de actualizaciones firmadas mediante GitHub Releases;
-- instalación de actualizaciones sobre la versión existente sin desinstalación manual;
-- **SQLite como almacenamiento principal en la aplicación instalada**;
-- migración automática de los datos web en la primera ejecución de escritorio;
-- copias automáticas rotativas, copia manual y carpeta configurable;
-- verificación de integridad y restauración con punto de seguridad.
-
-Detalles de compilación: [`docs/DESKTOP.md`](docs/DESKTOP.md).
-
 ### Datos y copias de seguridad
 
 - almacenamiento local;
@@ -148,11 +132,11 @@ Cuando exista un instalador publicado en **Releases**:
 3. abre la versión más reciente;
 4. descarga el instalador de Windows, normalmente con un nombre similar a:
    ```text
-   Plano-de-Trade-0.x.x-Windows-x64-setup.exe
+   Trade-Blueprint-0.x.x-Windows-x64-setup.exe
    ```
 5. haz doble clic en el archivo;
 6. sigue las pantallas del instalador;
-7. abre **Plano de Trade** desde el menú Inicio.
+7. abre **Trade Blueprint** desde el menú Inicio.
 
 Las versiones oficiales con updater habilitado podrán buscar nuevas versiones en **Configuración > Aplicación de escritorio y actualizaciones**.
 
@@ -222,15 +206,6 @@ npm run build
 ```
 
 La generación del instalador de escritorio requiere herramientas adicionales. Consulta [`docs/DESKTOP.md`](docs/DESKTOP.md) solo si deseas desarrollar o empaquetar la aplicación.
-
-## Copia de seguridad
-
-En **Configuración > Copia de seguridad y recuperación**:
-
-- usa **Exportar copia JSON** para guardar una copia completa;
-- usa **Importar copia JSON** para restaurar datos compatibles.
-
-Las copias antiguas se migran automáticamente al schema actual.
 
 ## Documentación
 
