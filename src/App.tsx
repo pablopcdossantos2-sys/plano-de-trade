@@ -68,6 +68,10 @@ function emptyReview(): PlanReview {
     observedScenario: "",
     followedPlan: "",
     executionSummary: "",
+    executionOrigin: "",
+    violatedRuleIds: [],
+    readingQuality: 0,
+    executionQuality: 0,
     deviations: "",
     lessons: "",
     result: "",
@@ -574,7 +578,7 @@ function ComparisonPanel({ plan }: { plan: TradePlan }) {
   </div>;
 }
 
-function PlanEditor({ initial, assets, setups, onPersist, onCreateTemplate, onClose }: { initial: TradePlan; assets: string[]; setups: TradeSetup[]; onPersist: (p: TradePlan) => void; onCreateTemplate: (template: PlanTemplate) => void; onClose: () => void }) {
+function PlanEditor({ initial, assets, setups, rules, onPersist, onCreateTemplate, onClose }: { initial: TradePlan; assets: string[]; setups: TradeSetup[]; rules: TradeRule[]; onPersist: (p: TradePlan) => void; onCreateTemplate: (template: PlanTemplate) => void; onClose: () => void }) {
   const [draft, setDraft] = useState<TradePlan>(() => structuredClone(initial));
   const [section, setSection] = useState<"plan" | "review">("plan");
   const [notice, setNotice] = useState("");
@@ -707,9 +711,17 @@ function PlanEditor({ initial, assets, setups, onPersist, onCreateTemplate, onCl
         <Field label="O que EU efetivamente fiz?"><textarea rows={7} value={draft.review.executionSummary} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, executionSummary: e.target.value } })} placeholder="Entradas, saídas, esperas, cancelamentos e decisões que você realmente tomou." /></Field>
         <Field label="Qual cenário predominou?"><select value={draft.review.observedScenario} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, observedScenario: e.target.value as PlanReview["observedScenario"] } })}><option value="">Selecione</option><option>A</option><option>B</option><option>C</option><option>Nenhum</option><option>Mistura</option></select></Field>
         <Field label="Você seguiu o plano?"><select value={draft.review.followedPlan} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, followedPlan: e.target.value as PlanReview["followedPlan"] } })}><option value="">Selecione</option><option>Sim</option><option>Parcialmente</option><option>Não</option><option>Não operei</option></select></Field>
+        <Field label="Origem da execução" hint="Classifique se o que você executou estava previsto no plano."><select value={draft.review.executionOrigin} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, executionOrigin: e.target.value as PlanReview["executionOrigin"] } })}><option value="">Selecione</option><option>Planejada</option><option>Parcialmente planejada</option><option>Improvisada</option></select></Field>
+        <Field label="Qualidade da leitura" hint="Avalie a leitura do mercado, independentemente do resultado financeiro."><select value={draft.review.readingQuality} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, readingQuality: Number(e.target.value) } })}><option value={0}>Não avaliada</option><option value={1}>1 — Muito fraca</option><option value={2}>2 — Fraca</option><option value={3}>3 — Adequada</option><option value={4}>4 — Boa</option><option value={5}>5 — Excelente</option></select></Field>
+        <Field label="Qualidade da execução" hint="Avalie disciplina e execução, separadamente da qualidade da leitura."><select value={draft.review.executionQuality} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, executionQuality: Number(e.target.value) } })}><option value={0}>Não avaliada</option><option value={1}>1 — Muito fraca</option><option value={2}>2 — Fraca</option><option value={3}>3 — Adequada</option><option value={4}>4 — Boa</option><option value={5}>5 — Excelente</option></select></Field>
         <Field label="Desvios entre plano e execução"><textarea rows={5} value={draft.review.deviations} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, deviations: e.target.value } })} placeholder="O que você fez diferente do planejado? Por quê?" /></Field>
         <Field label="Resultado / observação de resultado"><input value={draft.review.result} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, result: e.target.value } })} placeholder="Ex.: +1,4R; -R$ 250; não operei" /></Field>
         <Field label="Principal aprendizado"><textarea rows={5} value={draft.review.lessons} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, lessons: e.target.value } })} placeholder="O que merece virar regra, ajuste de setup, checklist ou hipótese futura?" /></Field>
+      </div>
+      <div className="rule-violations panel-subsection">
+        <h3>Regras violadas</h3>
+        <p className="muted-text">Marque apenas regras que foram efetivamente descumpridas. Isso alimenta o histórico de recorrência.</p>
+        {rules.length ? <div className="violation-grid">{rules.map((rule) => <label className="check" key={rule.id}><input type="checkbox" checked={draft.review.violatedRuleIds.includes(rule.id)} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, violatedRuleIds: e.target.checked ? [...draft.review.violatedRuleIds, rule.id] : draft.review.violatedRuleIds.filter((id) => id !== rule.id) } })} /> <span><b>{rule.title}</b> <small>({rule.category})</small></span></label>)}</div> : <div className="empty">Cadastre regras no Sistema de trade para registrar violações de forma estruturada.</div>}
       </div>
       <AttachmentField value={draft.review.attachments} onChange={(attachments) => setDraft({ ...draft, review: { ...draft.review, attachments } })} title="Gráficos e imagens do que aconteceu" />
       <label className="check"><input type="checkbox" checked={!!draft.review.reviewedAt} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, reviewedAt: e.target.checked ? new Date().toISOString() : undefined } })} /> Marcar revisão como concluída</label>
@@ -910,7 +922,7 @@ function PlansPage({ state, setState }: { state: AppState; setState: React.Dispa
     setEditing(duplicatePlan(plan));
   }
 
-  if (editing) return <section className="page"><PlanEditor initial={editing} assets={state.settings.assets} setups={state.setups} onClose={() => setEditing(null)} onPersist={persist} onCreateTemplate={saveTemplate} /></section>;
+  if (editing) return <section className="page"><PlanEditor initial={editing} assets={state.settings.assets} setups={state.setups} rules={state.rules} onClose={() => setEditing(null)} onPersist={persist} onCreateTemplate={saveTemplate} /></section>;
 
   return <section className="page">
     <div className="page-heading"><div><span className="eyebrow">ANTES E DEPOIS DO MERCADO</span><h1>Planos de trade</h1><p>Crie hipóteses, procure contraprovas, congele a preparação e depois compare aquilo que você planejou com o mercado real e sua execução.</p></div><button className="primary" onClick={() => setEditing(newPlan(state))}>+ Novo plano</button></div>
