@@ -86,16 +86,16 @@
 - [x] Templates de plano por mercado/ativo.
 - [x] Duplicar plano anterior sem copiar revisão.
 
-## Fase 4 — Aprendizado histórico
+## Fase 4 — Aprendizado histórico ✅
 
-- [ ] Calendário de pregões planejados e revisados.
-- [ ] Filtros por ativo, setup, cenário, aderência e período.
-- [ ] Painel de aderência por setup.
-- [ ] Violações de regras mais frequentes.
-- [ ] Operações planejadas × improvisadas.
-- [ ] Qualidade da leitura × qualidade da execução.
-- [ ] Busca textual em planos, regras e setups.
-- [ ] Galeria histórica de imagens.
+- [x] Calendário de pregões planejados e revisados.
+- [x] Filtros por ativo, setup, cenário, aderência e período.
+- [x] Painel de aderência por setup.
+- [x] Violações de regras mais frequentes.
+- [x] Operações planejadas × improvisadas.
+- [x] Qualidade da leitura × qualidade da execução.
+- [x] Busca textual em planos, regras e setups.
+- [x] Galeria histórica de imagens.
 
 ## Fase 5 — Integração com diário de trades
 
