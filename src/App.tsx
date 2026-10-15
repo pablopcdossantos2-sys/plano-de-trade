@@ -944,6 +944,10 @@ function buildPlanText(p: TradePlan) {
     draft: "CURRENT DRAFT — NO FROZEN VERSION",
     title: "TRADE PLAN",
     bias: "Bias",
+    conviction: "Declared conviction",
+    changeMind: "I would change my mind if",
+    preparation: "Preparation completeness",
+    checklist: "PRE-MARKET CHECKLIST",
     maxRisk: "Maximum risk",
     maxTrades: "Maximum trades",
     context: "CONTEXT",
@@ -972,6 +976,10 @@ function buildPlanText(p: TradePlan) {
     draft: "BORRADOR ACTUAL — SIN VERSIÓN CONGELADA",
     title: "PLAN DE TRADING",
     bias: "Sesgo",
+    conviction: "Convicción declarada",
+    changeMind: "Cambiaría de opinión si",
+    preparation: "Completitud de la preparación",
+    checklist: "CHECKLIST PREMERCADO",
     maxRisk: "Riesgo máximo",
     maxTrades: "Máximo de operaciones",
     context: "CONTEXTO",
@@ -1000,6 +1008,10 @@ function buildPlanText(p: TradePlan) {
     draft: "RASCUNHO ATUAL — SEM VERSÃO CONGELADA",
     title: "PLANO DE TRADE",
     bias: "Viés",
+    conviction: "Convicção declarada",
+    changeMind: "Mudaria de opinião se",
+    preparation: "Completude da preparação",
+    checklist: "CHECKLIST PRÉ-MERCADO",
     maxRisk: "Risco máximo",
     maxTrades: "Máximo de operações",
     context: "CONTEXTO",
@@ -1030,8 +1042,10 @@ function buildPlanText(p: TradePlan) {
   const localizedBias = translateUi(base.bias, activeLanguage);
   const localizedObserved = translateUi(p.review.observedScenario, activeLanguage);
   const localizedFollowed = translateUi(p.review.followedPlan, activeLanguage);
+  const localizedConviction = base.thesisConviction ? translateUi(base.thesisConviction, activeLanguage) : "—";
+  const checklist = base.checklist.map((item) => `${item.checked ? "[x]" : "[ ]"} ${item.text}`).join("\n");
 
-  return `${labels.title} — ${base.asset} — ${fmtDate(base.tradingDate)}\n${source}\n\n${labels.bias}: ${localizedBias}\n${labels.maxRisk}: ${base.maxRisk}\n${labels.maxTrades}: ${base.maxTrades}\n\n${labels.context}\n${base.marketContext}\n\n${labels.levels}\n${base.keyLevels}\n\n${labels.events}\n${base.macroEvents}\n\n${labels.counter}\n${base.evidenceAgainstThesis}\n\n${labels.noTrade}\n${base.noTradeConditions}\n\n${scenarios}\n\n${labels.behavior}\n${base.behaviorPlan}\n\n${labels.market}\n${p.review.happened}\n\n${labels.execution}\n${p.review.executionSummary}\n\n${labels.observed}: ${localizedObserved}\n${labels.followed}: ${localizedFollowed}\n${labels.deviations}: ${p.review.deviations}\n${labels.result}: ${p.review.result}\n${labels.lessons}: ${p.review.lessons}\n`;
+  return `${labels.title} — ${base.asset} — ${fmtDate(base.tradingDate)}\n${source}\n\n${labels.bias}: ${localizedBias}\n${labels.conviction}: ${localizedConviction}\n${labels.changeMind}: ${base.changeMindCondition}\n${labels.preparation}: ${base.readinessScore === undefined ? planReadiness(p).score : base.readinessScore}%\n${labels.maxRisk}: ${base.maxRisk}\n${labels.maxTrades}: ${base.maxTrades}\n\n${labels.context}\n${base.marketContext}\n\n${labels.levels}\n${base.keyLevels}\n\n${labels.events}\n${base.macroEvents}\n\n${labels.counter}\n${base.evidenceAgainstThesis}\n\n${labels.noTrade}\n${base.noTradeConditions}\n\n${labels.checklist}\n${checklist}\n\n${scenarios}\n\n${labels.behavior}\n${base.behaviorPlan}\n\n${labels.market}\n${p.review.happened}\n\n${labels.execution}\n${p.review.executionSummary}\n\n${labels.observed}: ${localizedObserved}\n${labels.followed}: ${localizedFollowed}\n${labels.deviations}: ${p.review.deviations}\n${labels.result}: ${p.review.result}\n${labels.lessons}: ${p.review.lessons}\n`;
 }
 
 function SettingsPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
