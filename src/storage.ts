@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AppState } from "./types";
 
-export const CURRENT_SCHEMA_VERSION = 7;
+export const CURRENT_SCHEMA_VERSION = 8;
 // Mantemos a mesma chave para preservar os dados criados desde o MVP inicial.
 export const STORAGE_KEY = "plano-de-trade-data-v1";
 
@@ -324,6 +324,29 @@ const journalTradeSchema = z.object({
   importedAt: z.string(),
 });
 
+const trainingRecordSchema = z.object({
+  id: z.string(),
+  type: z.enum(["replay", "revisit", "error"]),
+  planId: z.string().optional(),
+  setupId: z.string().optional(),
+  ruleId: z.string().optional(),
+  prompt: z.string(),
+  decisionNow: z.string(),
+  interpretationNow: z.string(),
+  comparisonNotes: z.string(),
+  createdAt: z.string(),
+  completedAt: z.string().optional(),
+});
+
+const setupExampleSchema = z.object({
+  id: z.string(),
+  setupId: z.string(),
+  planId: z.string(),
+  classification: z.enum(["Correto", "Incorreto"]),
+  notes: z.string(),
+  createdAt: z.string(),
+});
+
 const studySchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -399,6 +422,18 @@ const stateV6Schema = z.object({
   updatedAt: z.string(),
 });
 
+const stateV7Schema = z.object({
+  schemaVersion: z.literal(7),
+  rules: z.array(ruleSchema),
+  setups: z.array(setupSchema),
+  plans: z.array(planSchema),
+  planTemplates: z.array(planTemplateSchema),
+  journalTrades: z.array(journalTradeSchema),
+  studies: z.array(studySchema),
+  settings: settingsSchema,
+  updatedAt: z.string(),
+});
+
 const stateSchema = z.object({
   schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
   rules: z.array(ruleSchema),
@@ -406,6 +441,8 @@ const stateSchema = z.object({
   plans: z.array(planSchema),
   planTemplates: z.array(planTemplateSchema),
   journalTrades: z.array(journalTradeSchema),
+  trainingRecords: z.array(trainingRecordSchema),
+  setupExamples: z.array(setupExampleSchema),
   studies: z.array(studySchema),
   settings: settingsSchema,
   updatedAt: z.string(),
@@ -489,6 +526,8 @@ export function initialState(): AppState {
     plans: [],
     planTemplates: [],
     journalTrades: [],
+    trainingRecords: [],
+    setupExamples: [],
     studies: [],
     settings: {
       traderName: "",
@@ -518,6 +557,21 @@ function migrateState(data: unknown): AppState {
     return current.data;
   }
 
+  if (versionResult.data.schemaVersion === 7) {
+    const legacy = stateV7Schema.safeParse(data);
+    if (!legacy.success) {
+      const issue = legacy.error.issues[0];
+      throw new Error(`Backup v7 inválido em ${issue.path.join(".") || "arquivo"}: ${issue.message}`);
+    }
+    return {
+      ...legacy.data,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      trainingRecords: [],
+      setupExamples: [],
+      updatedAt: now(),
+    };
+  }
+
   if (versionResult.data.schemaVersion === 6) {
     const legacy = stateV6Schema.safeParse(data);
     if (!legacy.success) {
@@ -529,6 +583,8 @@ function migrateState(data: unknown): AppState {
       schemaVersion: CURRENT_SCHEMA_VERSION,
       plans: legacy.data.plans.map(migratePlanV6),
       journalTrades: [],
+      trainingRecords: [],
+      setupExamples: [],
       updatedAt: now(),
     };
   }
@@ -544,6 +600,8 @@ function migrateState(data: unknown): AppState {
       schemaVersion: CURRENT_SCHEMA_VERSION,
       plans: legacy.data.plans.map(migratePlanV5),
       journalTrades: [],
+      trainingRecords: [],
+      setupExamples: [],
       updatedAt: now(),
     };
   }
@@ -560,6 +618,8 @@ function migrateState(data: unknown): AppState {
       plans: legacy.data.plans.map(migratePlanV4),
       planTemplates: [],
       journalTrades: [],
+      trainingRecords: [],
+      setupExamples: [],
       updatedAt: now(),
     };
   }
@@ -576,6 +636,8 @@ function migrateState(data: unknown): AppState {
       plans: legacy.data.plans.map(migratePlanV4),
       planTemplates: [],
       journalTrades: [],
+      trainingRecords: [],
+      setupExamples: [],
       studies: [],
       updatedAt: now(),
     };
@@ -593,6 +655,8 @@ function migrateState(data: unknown): AppState {
       plans: legacy.data.plans.map(migratePlanV4),
       planTemplates: [],
       journalTrades: [],
+      trainingRecords: [],
+      setupExamples: [],
       studies: [],
       settings: { ...legacy.data.settings, language: "pt-BR" },
       updatedAt: now(),
@@ -612,6 +676,8 @@ function migrateState(data: unknown): AppState {
       plans: legacy.data.plans.map((plan) => migratePlanV4(migrateV1PlanToV4(plan))),
       planTemplates: [],
       journalTrades: [],
+      trainingRecords: [],
+      setupExamples: [],
       studies: [],
       settings: { ...legacy.data.settings, language: "pt-BR" },
       updatedAt: now(),
