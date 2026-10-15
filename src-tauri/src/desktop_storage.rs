@@ -8,6 +8,7 @@ use std::{
 };
 use tauri::{AppHandle, Manager};
 
+// Nome legado preservado para manter o mesmo banco após o rebranding.
 const DB_FILE: &str = "plano-de-trade.sqlite3";
 const DEFAULT_BACKUP_FOLDER: &str = "backups";
 const AUTO_BACKUP_LIMIT: usize = 10;
@@ -132,7 +133,7 @@ fn write_backup_file(
     validate_state_json(state_json)?;
     let directory = backup_directory_internal(app, connection)?;
     let stamp = timestamp()?;
-    let path = directory.join(format!("plano-de-trade-{kind}-{stamp}.json"));
+    let path = directory.join(format!("trade-blueprint-{kind}-{stamp}.json"));
     fs::write(&path, state_json)
         .map_err(|error| format!("Não foi possível criar o backup: {error}"))?;
     Ok(path.to_string_lossy().to_string())
@@ -146,7 +147,7 @@ fn rotate_automatic_backups(directory: &Path) -> Result<(), String> {
         .filter(|path| {
             path.file_name()
                 .and_then(|name| name.to_str())
-                .map(|name| name.starts_with("plano-de-trade-auto-") && name.ends_with(".json"))
+                .map(|name| (name.starts_with("trade-blueprint-auto-") || name.starts_with("plano-de-trade-auto-")) && name.ends_with(".json"))
                 .unwrap_or(false)
         })
         .collect();
@@ -230,7 +231,7 @@ pub fn set_backup_directory(app: AppHandle, path: String) -> Result<String, Stri
     fs::create_dir_all(&directory)
         .map_err(|error| format!("Não foi possível criar/acessar a pasta escolhida: {error}"))?;
 
-    let test_path = directory.join(".plano-de-trade-write-test");
+    let test_path = directory.join(".trade-blueprint-write-test");
     fs::write(&test_path, b"ok")
         .map_err(|error| format!("A pasta escolhida não permite gravação: {error}"))?;
     let _ = fs::remove_file(test_path);
@@ -309,7 +310,7 @@ mod tests {
 
     #[test]
     fn validates_schema_version() {
-        assert!(validate_state_json(r#"{"schemaVersion":7}"#).is_ok());
+        assert!(validate_state_json(r#"{"schemaVersion":8}"#).is_ok());
         assert!(validate_state_json(r#"{"value":1}"#).is_err());
         assert!(validate_state_json("not json").is_err());
     }
