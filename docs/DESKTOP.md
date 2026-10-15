@@ -151,16 +151,69 @@ O workflow `.github/workflows/desktop-windows.yml` roda em Windows e valida:
 
 O instalador gerado por builds comuns é disponibilizado como artifact do GitHub Actions. Releases oficiais devem usar o workflow de Release assinada.
 
-## Persistência
+## Persistência desktop
 
-Na v0.5, o desktop ainda reutiliza a persistência web existente. Atualizações do aplicativo não devem apagar esse armazenamento.
+No aplicativo instalado, **SQLite é o armazenamento principal**.
 
-A próxima etapa arquitetural é migrar a persistência desktop para **SQLite**, com foco em robustez e preservação dos dados:
+O banco fica na pasta de dados da aplicação e armazena o estado versionado completo em JSON dentro do SQLite. Essa estratégia preserva as migrações de schema existentes e remove a limitação prática de capacidade do `localStorage`.
 
-- dados fora da pasta de instalação;
-- backup antes de atualizações/migrações;
-- integridade verificável;
-- migração do conteúdo já salvo no navegador para o banco desktop;
-- restauração e backups rotativos.
+### Migração automática da versão web
 
-A migração para SQLite deve ser implementada separadamente do primeiro empacotamento Tauri para reduzir o risco de perda de dados.
+Na primeira execução desktop:
+
+1. o aplicativo procura um estado já salvo no SQLite;
+2. se o banco estiver vazio, lê o estado local existente da versão web;
+3. grava esse estado no SQLite;
+4. a partir daí, o desktop passa a salvar no banco.
+
+O conteúdo antigo do navegador não precisa ser apagado para a migração funcionar.
+
+### Backups automáticos
+
+Ao salvar no desktop, o backend verifica se já existe um backup automático do dia.
+
+- no máximo um backup automático por dia;
+- os **10 backups automáticos mais recentes** são mantidos;
+- backups antigos dessa rotação são removidos automaticamente;
+- o formato permanece JSON, facilitando inspeção e portabilidade.
+
+### Pasta de backup
+
+Em **Configurações > Aplicativo desktop e atualizações > Armazenamento desktop**, o usuário pode escolher uma pasta diferente para os backups.
+
+Se nenhuma pasta for escolhida, é utilizada a pasta `backups` dentro da área de dados da aplicação.
+
+A pasta selecionada é testada para confirmar permissão de gravação.
+
+### Backup antes de operações críticas
+
+O aplicativo cria um backup de segurança:
+
+- antes de instalar uma atualização;
+- antes de restaurar outro backup.
+
+### Verificação de integridade
+
+A ação **Verificar integridade** executa:
+
+- `PRAGMA quick_check` no SQLite;
+- validação do JSON salvo;
+- validação de `schemaVersion`.
+
+A interface informa também o caminho do banco e da pasta de backups.
+
+### Restauração
+
+A ação **Restaurar backup do desktop** abre um seletor nativo de arquivo JSON.
+
+Antes de substituir os dados atuais, o backend cria automaticamente um backup `pre-restore`.
+
+### Imagens
+
+Como o desktop não depende mais do limite do `localStorage`, planos, estudos, regras e setups podem armazenar um volume maior de imagens compactadas.
+
+A estrutura de anexos continua compatível com os backups JSON atuais.
+
+## Release assinada ainda pendente
+
+A infraestrutura do updater está pronta, mas a primeira Release oficial assinada e o teste completo **versão A → versão B** continuam dependentes da configuração das chaves privadas de assinatura no GitHub.
