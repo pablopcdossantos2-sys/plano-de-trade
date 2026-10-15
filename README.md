@@ -14,7 +14,7 @@ A ferramenta não pretende prever o mercado. Ela organiza o processo decisório 
 3. **O que farei se o cenário A, B ou C se materializar?**
 4. **Depois do pregão, o que o mercado fez, o que eu fiz e quanto respeitei o plano original?**
 
-## Funcionalidades atuais — v0.10
+## Funcionalidades atuais — v0.11
 
 ### Sistema de trade
 
