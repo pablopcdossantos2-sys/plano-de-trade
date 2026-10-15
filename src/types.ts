@@ -57,6 +57,14 @@ export type TradeSetup = {
   updatedAt: string;
 };
 
+export type ChecklistItem = {
+  id: string;
+  text: string;
+  checked: boolean;
+};
+
+export type ThesisConviction = "" | "Baixa" | "Média" | "Alta";
+
 export type PlanReview = {
   happened: string;
   observedScenario: "A" | "B" | "C" | "Nenhum" | "Mistura" | "";
@@ -84,9 +92,13 @@ export type PlanSnapshot = {
   maxRisk: string;
   maxTrades: number;
   noTradeConditions: string;
-  checklist: string[];
+  checklist: ChecklistItem[];
   scenarios: Scenario[];
   behaviorPlan: string;
+  thesisConviction: ThesisConviction;
+  changeMindCondition: string;
+  readinessScore?: number;
+  readinessIssues?: string[];
   attachments: Attachment[];
 };
 
@@ -104,13 +116,38 @@ export type TradePlan = {
   maxRisk: string;
   maxTrades: number;
   noTradeConditions: string;
-  checklist: string[];
+  checklist: ChecklistItem[];
   scenarios: Scenario[];
   behaviorPlan: string;
+  thesisConviction: ThesisConviction;
+  changeMindCondition: string;
   attachments: Attachment[];
   planStatus: "draft" | "frozen";
   versions: PlanSnapshot[];
   review: PlanReview;
+  createdAt: string;
+  updatedAt: string;
+};
+
+
+export type PlanTemplate = {
+  id: string;
+  title: string;
+  asset: string;
+  setupId?: string;
+  bias: "Alta" | "Baixa" | "Neutro";
+  thesisConviction: ThesisConviction;
+  marketContext: string;
+  keyLevels: string;
+  macroEvents: string;
+  evidenceAgainstThesis: string;
+  changeMindCondition: string;
+  maxRisk: string;
+  maxTrades: number;
+  noTradeConditions: string;
+  checklist: ChecklistItem[];
+  scenarios: Scenario[];
+  behaviorPlan: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -156,6 +193,7 @@ export type AppState = {
   rules: TradeRule[];
   setups: TradeSetup[];
   plans: TradePlan[];
+  planTemplates: PlanTemplate[];
   studies: TradeStudy[];
   settings: Settings;
   updatedAt: string;
