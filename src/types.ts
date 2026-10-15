@@ -65,11 +65,17 @@ export type ChecklistItem = {
 
 export type ThesisConviction = "" | "Baixa" | "Média" | "Alta";
 
+export type ExecutionOrigin = "" | "Planejada" | "Parcialmente planejada" | "Improvisada";
+
 export type PlanReview = {
   happened: string;
   observedScenario: "A" | "B" | "C" | "Nenhum" | "Mistura" | "";
   followedPlan: "Sim" | "Parcialmente" | "Não" | "Não operei" | "";
   executionSummary: string;
+  executionOrigin: ExecutionOrigin;
+  violatedRuleIds: string[];
+  readingQuality: number;
+  executionQuality: number;
   deviations: string;
   lessons: string;
   result: string;
