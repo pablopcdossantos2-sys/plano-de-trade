@@ -247,6 +247,44 @@ Recursos:
 
 A especificação detalhada do formato fica em `docs/JOURNAL-INTEGRATION.md`.
 
+### 3.14 Treinamento deliberado
+
+A seção Treinamento usa o histórico real como material de prática deliberada.
+
+#### Replay de decisão
+
+- somente planos com versão congelada entram no Replay;
+- contexto, níveis, contraprovas e cenários congelados são exibidos;
+- resultado real, execução original e aprendizado posterior ficam ocultos;
+- o trader precisa escrever sua decisão e interpretação atuais antes de revelar o desfecho;
+- após revelar, registra a comparação entre “o que pensei naquela época” e “como interpreto agora”;
+- o exercício é salvo somente depois da revelação do desfecho.
+
+#### Planos de baixa aderência
+
+Planos revisados com aderência Parcialmente ou Não aparecem em uma fila própria para revisita.
+
+#### Exercícios por erro recorrente
+
+O sistema agrega violações estruturadas de regras e permite transformar as mais frequentes em exercícios com:
+
+- sinais de alerta;
+- resposta concreta;
+- regra de ação para uma próxima ocorrência.
+
+#### Biblioteca pessoal de setups
+
+Planos revisados vinculados a setups podem ser classificados como exemplos **Corretos** ou **Incorretos**, com observações e imagens do próprio plano/revisão.
+
+#### Persistência
+
+O schema armazena:
+
+- `trainingRecords: TrainingRecord[]`;
+- `setupExamples: SetupExample[]`.
+
+Backups anteriores recebem arrays vazios, sem fabricar exercícios retroativos.
+
 ## 4. Persistência e portabilidade
 
 ### Web MVP
@@ -255,7 +293,7 @@ A especificação detalhada do formato fica em `docs/JOURNAL-INTEGRATION.md`.
 - imagens em Data URL compactadas;
 - backup JSON completo.
 
-### Schema v7
+### Schema v8
 
 Mantém os recursos anteriores e adiciona:
 
@@ -267,12 +305,14 @@ Mantém os recursos anteriores e adiciona:
 - revisão estruturada com origem da execução, regras violadas, qualidade da leitura e qualidade da execução;
 - `sessionId` estável por plano;
 - `journalTrades: JournalTrade[]` para execuções importadas e seus vínculos;
+- `trainingRecords: TrainingRecord[]` para Replay, revisitas e exercícios de erro;
+- `setupExamples: SetupExample[]` para biblioteca pessoal de exemplos;
 - armazenamento separado entre estudos e planos operacionais;
 - `language` continua suportando `pt-BR`, `en` e `es`;
 - migração automática de dados v1, v2 e v3;
 - estudos incluídos no backup JSON completo.
 
-### Migração v1/v2/v3/v4/v5/v6 → v7
+### Migração v1/v2/v3/v4/v5/v6/v7 → v8
 
 - regras são preservadas;
 - planos são preservados;
@@ -285,6 +325,7 @@ Mantém os recursos anteriores e adiciona:
 - backups v4 recebem os novos campos de qualidade da preparação sem inventar scores históricos para snapshots antigos;
 - backups v5 recebem os novos campos históricos da revisão vazios/zero, sem inferir violações, origem ou notas;
 - backups v6 recebem `sessionId` gerado para cada plano e `journalTrades: []`, sem inventar execuções históricas;
+- backups v7 recebem `trainingRecords: []` e `setupExamples: []`, sem criar treinos retroativos;
 - planos antigos continuam como rascunho, sem snapshots retroativos inventados.
 
 ## 5. Próximas métricas úteis
