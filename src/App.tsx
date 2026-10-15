@@ -941,13 +941,13 @@ function PlansPage({ state, setState }: { state: AppState; setState: React.Dispa
         {p.evidenceAgainstThesis && <div className="counter-mini"><b>Contra a tese:</b> {p.evidenceAgainstThesis}</div>}
         <div className="scenario-pills">{p.scenarios.map((s) => <span key={s.id}>{s.label}: {s.title || "não definido"}</span>)}</div>
       </div>
-      <div className="vertical-actions"><button onClick={() => setEditing(structuredClone(p))}>Abrir / editar</button><button onClick={() => duplicate(p)}>Duplicar sem revisão</button><button onClick={() => downloadText(`plano-${p.asset}-${p.tradingDate}.txt`, buildPlanText(p))}>Exportar texto</button><button className="danger" onClick={() => { if (confirm(translateUi("Remover este plano?", activeLanguage))) setState((s) => ({ ...s, plans: s.plans.filter((x) => x.id !== p.id) })); }}>Remover</button></div>
+      <div className="vertical-actions"><button onClick={() => setEditing(structuredClone(p))}>Abrir / editar</button><button onClick={() => duplicate(p)}>Duplicar sem revisão</button><button onClick={() => downloadText(`plano-${p.asset}-${p.tradingDate}.txt`, buildPlanText(p, state.rules))}>Exportar texto</button><button className="danger" onClick={() => { if (confirm(translateUi("Remover este plano?", activeLanguage))) setState((s) => ({ ...s, plans: s.plans.filter((x) => x.id !== p.id) })); }}>Remover</button></div>
     </article>)}</div>
     {!plans.length && <div className="empty">Nenhum plano encontrado. Crie um plano para o próximo pregão.</div>}
   </section>;
 }
 
-function buildPlanText(p: TradePlan) {
+function buildPlanText(p: TradePlan, rules: TradeRule[] = []) {
   const reference = latestFrozenVersion(p);
   const base = reference ?? currentReference(p);
 
@@ -1069,7 +1069,7 @@ function buildPlanText(p: TradePlan) {
   const localizedConviction = base.thesisConviction ? translateUi(base.thesisConviction, activeLanguage) : "—";
   const localizedOrigin = translateUi(p.review.executionOrigin, activeLanguage);
   const checklist = base.checklist.map((item) => `${item.checked ? "[x]" : "[ ]"} ${item.text}`).join("\n");
-  const violatedRules = p.review.violatedRuleIds.map((id) => translateUi(id, activeLanguage)).join(", ");
+  const violatedRules = p.review.violatedRuleIds.map((id) => rules.find((rule) => rule.id === id)?.title || id).join(", ");
 
   return `${labels.title} — ${base.asset} — ${fmtDate(base.tradingDate)}\n${source}\n\n${labels.bias}: ${localizedBias}\n${labels.conviction}: ${localizedConviction}\n${labels.changeMind}: ${base.changeMindCondition}\n${labels.preparation}: ${base.readinessScore === undefined ? planReadiness(p).score : base.readinessScore}%\n${labels.maxRisk}: ${base.maxRisk}\n${labels.maxTrades}: ${base.maxTrades}\n\n${labels.context}\n${base.marketContext}\n\n${labels.levels}\n${base.keyLevels}\n\n${labels.events}\n${base.macroEvents}\n\n${labels.counter}\n${base.evidenceAgainstThesis}\n\n${labels.noTrade}\n${base.noTradeConditions}\n\n${labels.checklist}\n${checklist}\n\n${scenarios}\n\n${labels.behavior}\n${base.behaviorPlan}\n\n${labels.market}\n${p.review.happened}\n\n${labels.execution}\n${p.review.executionSummary}\n\n${labels.observed}: ${localizedObserved}\n${labels.followed}: ${localizedFollowed}\n${labels.origin}: ${localizedOrigin || "—"}\n${labels.readingQuality}: ${p.review.readingQuality || "—"}/5\n${labels.executionQuality}: ${p.review.executionQuality || "—"}/5\n${labels.violatedRules}: ${violatedRules || "—"}\n${labels.deviations}: ${p.review.deviations}\n${labels.result}: ${p.review.result}\n${labels.lessons}: ${p.review.lessons}\n`;
 }
