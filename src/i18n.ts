@@ -132,7 +132,7 @@ const en: Record<string, string> = {
   "Sem execução": "No execution",
   "Sem registro importado": "No imported record",
   "Ainda não há planos revisados ou execuções importadas para o relatório conjunto.": "There are no reviewed plans or imported executions for the combined report yet.",
-  "Plano de Trade": "Trade Plan",
+  "Trade Blueprint": "Trade Blueprint",
   "preparar • executar • revisar": "prepare • execute • review",
   "preparar • congelar • executar • revisar": "prepare • freeze • execute • review",
   "Visão geral": "Overview",
@@ -671,7 +671,7 @@ const es: Record<string, string> = {
   "Sem execução": "Sin ejecución",
   "Sem registro importado": "Sin registro importado",
   "Ainda não há planos revisados ou execuções importadas para o relatório conjunto.": "Todavía no hay planes revisados ni ejecuciones importadas para el informe conjunto.",
-  "Plano de Trade": "Plan de Trading",
+  "Trade Blueprint": "Trade Blueprint",
   "preparar • executar • revisar": "preparar • ejecutar • revisar",
   "preparar • congelar • executar • revisar": "preparar • congelar • ejecutar • revisar",
   "Visão geral": "Resumen",
@@ -1196,7 +1196,7 @@ function translateTree(root: Node, language: UiLanguage) {
 export function useInterfaceLanguage(language: UiLanguage) {
   useEffect(() => {
     document.documentElement.lang = language;
-    document.title = language === "en" ? "Trade Plan" : language === "es" ? "Plan de Trading" : "Plano de Trade";
+    document.title = "Trade Blueprint";
 
     const run = () => translateTree(document.body, language);
     run();
