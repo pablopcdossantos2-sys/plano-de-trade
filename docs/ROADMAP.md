@@ -76,15 +76,15 @@
 - [x] Suporte trilíngue desde o lançamento da funcionalidade.
 - [x] Schema v4 e migração automática de v1, v2 e v3.
 
-## Fase 3 — Qualidade da preparação
+## Fase 3 — Qualidade da preparação ✅
 
-- [ ] Score de preparação antes do congelamento.
-- [ ] Alertas para campos críticos ausentes: invalidação, risco, contraprova e condições de não operação.
-- [ ] Checklist com estado concluído/não concluído, e não apenas texto.
-- [ ] Classificação de convicção da tese sem transformar convicção em sinal operacional.
-- [ ] Campo “o que teria de acontecer para eu mudar de opinião?”.
-- [ ] Templates de plano por mercado/ativo.
-- [ ] Duplicar plano anterior sem copiar revisão.
+- [x] Score de preparação antes do congelamento.
+- [x] Alertas para campos críticos ausentes: invalidação, risco, contraprova e condições de não operação.
+- [x] Checklist com estado concluído/não concluído, e não apenas texto.
+- [x] Classificação de convicção da tese sem transformar convicção em sinal operacional.
+- [x] Campo “o que teria de acontecer para eu mudar de opinião?”.
+- [x] Templates de plano por mercado/ativo.
+- [x] Duplicar plano anterior sem copiar revisão.
 
 ## Fase 4 — Aprendizado histórico
 
@@ -97,9 +97,9 @@
 - [ ] Busca textual em planos, regras e setups.
 - [ ] Galeria histórica de imagens.
 
-## Fase 5 — Integração com Trade Journal Tracker
+## Fase 5 — Integração com diário de trades
 
-- [ ] Identificador comum de pregão/trade.
+- [ ] Identificador comum entre plano, pregão e trade registrado.
 - [ ] Vincular trades executados ao plano e cenário correspondente.
 - [ ] Importar automaticamente resultado e dados objetivos da execução quando possível.
 - [ ] Comparar “planejei operar” × “operei” × “registrei no diário”.
