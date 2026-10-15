@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AppState } from "./types";
 
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 // Mantemos a mesma chave para preservar os dados criados desde o MVP inicial.
 export const STORAGE_KEY = "plano-de-trade-data-v1";
 
@@ -61,8 +61,15 @@ const reviewV1Schema = z.object({
   reviewedAt: z.string().optional(),
 });
 
-const reviewSchema = reviewV1Schema.extend({
+const reviewV5Schema = reviewV1Schema.extend({
   executionSummary: z.string(),
+});
+
+const reviewSchema = reviewV5Schema.extend({
+  executionOrigin: z.enum(["", "Planejada", "Parcialmente planejada", "Improvisada"]),
+  violatedRuleIds: z.array(z.string()),
+  readingQuality: z.number().int().min(0).max(5),
+  executionQuality: z.number().int().min(0).max(5),
 });
 
 const planV1Schema = z.object({
@@ -153,7 +160,7 @@ const planV4Schema = z.object({
   attachments: z.array(attachmentSchema),
   planStatus: z.enum(["draft", "frozen"]),
   versions: z.array(snapshotV4Schema),
-  review: reviewSchema,
+  review: reviewV5Schema,
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -190,6 +197,34 @@ const snapshotSchema = z.object({
   readinessIssues: z.array(z.string()).optional(),
   attachments: z.array(attachmentSchema),
 });
+
+const planV5Schema = z.object({
+  id: z.string(),
+  planDate: z.string(),
+  tradingDate: z.string(),
+  asset: z.string(),
+  bias: z.enum(["Alta", "Baixa", "Neutro"]),
+  setupId: z.string().optional(),
+  marketContext: z.string(),
+  keyLevels: z.string(),
+  macroEvents: z.string(),
+  evidenceAgainstThesis: z.string(),
+  maxRisk: z.string(),
+  maxTrades: z.number().int().min(1),
+  noTradeConditions: z.string(),
+  checklist: z.array(checklistItemSchema),
+  scenarios: z.array(scenarioSchema),
+  behaviorPlan: z.string(),
+  thesisConviction: thesisConvictionSchema,
+  changeMindCondition: z.string(),
+  attachments: z.array(attachmentSchema),
+  planStatus: z.enum(["draft", "frozen"]),
+  versions: z.array(snapshotSchema),
+  review: reviewV5Schema,
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
 
 const planSchema = z.object({
   id: z.string(),
@@ -293,6 +328,17 @@ const stateV4Schema = z.object({
   updatedAt: z.string(),
 });
 
+const stateV5Schema = z.object({
+  schemaVersion: z.literal(5),
+  rules: z.array(ruleSchema),
+  setups: z.array(setupSchema),
+  plans: z.array(planV5Schema),
+  planTemplates: z.array(planTemplateSchema),
+  studies: z.array(studySchema),
+  settings: settingsSchema,
+  updatedAt: z.string(),
+});
+
 const stateSchema = z.object({
   schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
   rules: z.array(ruleSchema),
@@ -330,6 +376,7 @@ function migratePlanV4(plan: z.infer<typeof planV4Schema>) {
     thesisConviction: "" as const,
     changeMindCondition: "",
     versions: plan.versions.map(migrateSnapshotV4),
+    review: migrateReviewV5(plan.review),
   };
 }
 
@@ -344,6 +391,23 @@ function migrateV1PlanToV4(plan: z.infer<typeof planV1Schema>): z.infer<typeof p
       ...plan.review,
       executionSummary: "",
     },
+  };
+}
+
+function migrateReviewV5(review: z.infer<typeof reviewV5Schema>) {
+  return {
+    ...review,
+    executionOrigin: "" as const,
+    violatedRuleIds: [],
+    readingQuality: 0,
+    executionQuality: 0,
+  };
+}
+
+function migratePlanV5(plan: z.infer<typeof planV5Schema>) {
+  return {
+    ...plan,
+    review: migrateReviewV5(plan.review),
   };
 }
 
@@ -381,6 +445,20 @@ function migrateState(data: unknown): AppState {
       throw new Error(`Dados incompatíveis em ${issue.path.join(".") || "arquivo"}: ${issue.message}`);
     }
     return current.data;
+  }
+
+  if (versionResult.data.schemaVersion === 5) {
+    const legacy = stateV5Schema.safeParse(data);
+    if (!legacy.success) {
+      const issue = legacy.error.issues[0];
+      throw new Error(`Backup v5 inválido em ${issue.path.join(".") || "arquivo"}: ${issue.message}`);
+    }
+    return {
+      ...legacy.data,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      plans: legacy.data.plans.map(migratePlanV5),
+      updatedAt: now(),
+    };
   }
 
   if (versionResult.data.schemaVersion === 4) {
