@@ -180,6 +180,29 @@ export type JournalTrade = {
   importedAt: string;
 };
 
+export type TrainingRecord = {
+  id: string;
+  type: "replay" | "revisit" | "error";
+  planId?: string;
+  setupId?: string;
+  ruleId?: string;
+  prompt: string;
+  decisionNow: string;
+  interpretationNow: string;
+  comparisonNotes: string;
+  createdAt: string;
+  completedAt?: string;
+};
+
+export type SetupExample = {
+  id: string;
+  setupId: string;
+  planId: string;
+  classification: "Correto" | "Incorreto";
+  notes: string;
+  createdAt: string;
+};
+
 export type TradeStudy = {
   id: string;
   title: string;
@@ -222,6 +245,8 @@ export type AppState = {
   plans: TradePlan[];
   planTemplates: PlanTemplate[];
   journalTrades: JournalTrade[];
+  trainingRecords: TrainingRecord[];
+  setupExamples: SetupExample[];
   studies: TradeStudy[];
   settings: Settings;
   updatedAt: string;
