@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { AppState } from "./types";
 
 export const CURRENT_SCHEMA_VERSION = 8;
-// Mantemos a mesma chave para preservar os dados criados desde o MVP inicial.
+// Mantemos a chave legada para preservar dados criados antes da adoção do nome Trade Blueprint.
 export const STORAGE_KEY = "plano-de-trade-data-v1";
 
 const attachmentSchema = z.object({
@@ -719,7 +719,7 @@ export function exportBackup(state: AppState) {
   const href = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = href;
-  link.download = `plano-de-trade-backup-${stamp}.json`;
+  link.download = `trade-blueprint-backup-${stamp}.json`;
   document.body.appendChild(link);
   link.click();
   link.remove();
