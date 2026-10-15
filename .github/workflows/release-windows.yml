@@ -130,11 +130,11 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ steps.release.outputs.tag }}
-          releaseName: "Plano de Trade ${{ steps.release.outputs.tag }}"
+          releaseName: "Trade Blueprint ${{ steps.release.outputs.tag }}"
           generateReleaseNotes: true
           releaseDraft: false
           args: "--bundles nsis --config .tauri-release.conf.json"
           uploadUpdaterJson: true
           updaterJsonPreferNsis: true
-          releaseAssetNamePattern: "Plano-de-Trade-[version]-Windows-[arch][setup][ext]"
+          releaseAssetNamePattern: "Trade-Blueprint-[version]-Windows-[arch][setup][ext]"
           retryAttempts: 2
