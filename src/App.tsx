@@ -2,7 +2,23 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { prepareImage } from "./images";
 import { exportBackup, initialState, loadState, parseBackup, saveState, STORAGE_KEY } from "./storage";
 import { localeForLanguage, translateUi, useInterfaceLanguage, type UiLanguage } from "./i18n";
-import { checkDesktopUpdate, desktopVersion, installDesktopUpdate, isDesktopApp, type DesktopUpdateInfo } from "./desktop";
+import {
+  checkDesktopIntegrity,
+  checkDesktopUpdate,
+  chooseDesktopBackupDirectory,
+  chooseDesktopBackupFile,
+  createDesktopBackup,
+  desktopVersion,
+  getDesktopBackupDirectory,
+  installDesktopUpdate,
+  isDesktopApp,
+  loadDesktopState,
+  restoreDesktopBackup,
+  saveDesktopState,
+  setDesktopBackupDirectory,
+  type DesktopIntegrityInfo,
+  type DesktopUpdateInfo,
+} from "./desktop";
 import type {
   AppState,
   Attachment,
@@ -1512,10 +1528,19 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
   const [desktopUpdate, setDesktopUpdate] = useState<DesktopUpdateInfo | null>(null);
   const [desktopUpdateStatus, setDesktopUpdateStatus] = useState("");
   const [desktopUpdateBusy, setDesktopUpdateBusy] = useState(false);
+  const [desktopBackupDir, setDesktopBackupDir] = useState("");
+  const [desktopStorageMessage, setDesktopStorageMessage] = useState("");
+  const [desktopIntegrity, setDesktopIntegrity] = useState<DesktopIntegrityInfo | null>(null);
 
   useEffect(() => {
     if (!isDesktopApp()) return;
-    void desktopVersion().then(setDesktopCurrentVersion).catch(() => setDesktopCurrentVersion(null));
+    void Promise.all([
+      desktopVersion().catch(() => null),
+      getDesktopBackupDirectory().catch(() => null),
+    ]).then(([version, backupDir]) => {
+      setDesktopCurrentVersion(version);
+      setDesktopBackupDir(backupDir ?? "");
+    });
   }, []);
 
   async function checkForUpdate() {
@@ -1547,6 +1572,55 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
     }
   }
 
+  async function chooseBackupFolder() {
+    try {
+      const selected = await chooseDesktopBackupDirectory();
+      if (!selected) return;
+      const saved = await setDesktopBackupDirectory(selected);
+      setDesktopBackupDir(saved ?? selected);
+      setDesktopStorageMessage("Pasta de backup atualizada. O próximo backup automático usará este local.");
+    } catch (error) {
+      setDesktopStorageMessage(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  async function createBackupNow() {
+    try {
+      const path = await createDesktopBackup();
+      setDesktopStorageMessage(path ? `Backup criado em: ${path}` : "Não foi possível criar o backup.");
+    } catch (error) {
+      setDesktopStorageMessage(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  async function verifyDesktopStorage() {
+    try {
+      const info = await checkDesktopIntegrity();
+      setDesktopIntegrity(info);
+      setDesktopStorageMessage(info?.message ?? "Verificação concluída.");
+      if (info?.backupDirectory) setDesktopBackupDir(info.backupDirectory);
+    } catch (error) {
+      setDesktopIntegrity(null);
+      setDesktopStorageMessage(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  async function restoreBackupFile() {
+    try {
+      const path = await chooseDesktopBackupFile();
+      if (!path) return;
+      if (!confirm(translateUi("Restaurar este backup substituirá os dados atuais do aplicativo. Deseja continuar?", activeLanguage))) return;
+      const json = await restoreDesktopBackup(path);
+      if (!json) return;
+      const next = parseBackup(json);
+      setState(next);
+      setAssetsText(next.settings.assets.join(", "));
+      setDesktopStorageMessage("Backup restaurado com sucesso. Um ponto de restauração dos dados anteriores foi criado automaticamente.");
+    } catch (error) {
+      setDesktopStorageMessage(error instanceof Error ? error.message : String(error));
+    }
+  }
+
   async function importFile(file: File | undefined) {
     if (!file) return;
     try {
@@ -1563,7 +1637,7 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
   const patch = (next: Partial<typeof settings>) => setState((s) => ({ ...s, settings: { ...s.settings, ...next } }));
 
   return <section className="page">
-    <div className="page-heading"><div><span className="eyebrow">PREFERÊNCIAS E DADOS</span><h1>Configurações</h1><p>Os dados ficam neste navegador. Use backups JSON para transportar ou restaurar regras, setups, planos, versões congeladas, revisões e imagens.</p></div></div>
+    <div className="page-heading"><div><span className="eyebrow">PREFERÊNCIAS E DADOS</span><h1>Configurações</h1><p>Os dados ficam localmente neste dispositivo. Use backups JSON para transportar ou restaurar regras, setups, planos, versões congeladas, revisões e imagens.</p></div></div>
     <div className="two-cols align-start">
       <div className="panel"><h2>Padrões de planejamento</h2>
         <Field label="Nome do trader"><input value={settings.traderName} onChange={(e) => patch({ traderName: e.target.value })} placeholder="Opcional" /></Field>
@@ -1584,6 +1658,21 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
             </div>
             {desktopUpdate?.notes && <div className="notice"><b>Notas da versão</b><br />{desktopUpdate.notes}</div>}
             {desktopUpdateStatus && <div className="notice">{desktopUpdateStatus}</div>}
+
+            <div className="desktop-storage-panel">
+              <h3>Armazenamento desktop</h3>
+              <p className="muted-text">No aplicativo instalado, o SQLite é o armazenamento principal. O conteúdo existente do navegador é migrado automaticamente na primeira execução desktop.</p>
+              <div className="desktop-path"><span>Pasta de backups</span><code>{desktopBackupDir || "Carregando…"}</code></div>
+              <p className="muted-text">Um backup automático é mantido por dia, com rotação dos 10 backups automáticos mais recentes. Antes de uma atualização ou restauração, o aplicativo cria um backup de segurança.</p>
+              <div className="stack-actions">
+                <button onClick={() => void chooseBackupFolder()}>Escolher pasta de backup</button>
+                <button onClick={() => void createBackupNow()}>Criar backup agora</button>
+                <button onClick={() => void verifyDesktopStorage()}>Verificar integridade</button>
+                <button onClick={() => void restoreBackupFile()}>Restaurar backup do desktop</button>
+              </div>
+              {desktopIntegrity && <div className={`notice ${desktopIntegrity.ok ? "" : "error"}`}><b>{desktopIntegrity.ok ? "Integridade confirmada" : "Problema de integridade"}</b><br />{desktopIntegrity.message}</div>}
+              {desktopStorageMessage && <div className="notice">{desktopStorageMessage}</div>}
+            </div>
           </> : <p className="muted-text">Você está usando a versão web. O instalador Windows baseado em Tauri possui atualização automática integrada.</p>}
         </div>
         <h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v7 inclui planos, estudos, templates, execuções importadas, histórico estruturado de revisões, biblioteca de setups, versões congeladas e preferência de idioma.</p>
@@ -1599,20 +1688,55 @@ export default function App() {
   const [state, setState] = useState<AppState>(() => loadState());
   const [tab, setTab] = useState<Tab>("dashboard");
   const [saveError, setSaveError] = useState("");
+  const [desktopReady, setDesktopReady] = useState(() => !isDesktopApp());
 
   activeLanguage = state.settings.language;
   activeLocale = localeForLanguage(activeLanguage);
   useInterfaceLanguage(activeLanguage);
 
   useEffect(() => {
+    if (!isDesktopApp()) return;
+    let active = true;
+    void loadDesktopState()
+      .then(async (json) => {
+        if (!active) return;
+        if (json) {
+          setState(parseBackup(json));
+        } else {
+          const localState = loadState();
+          await saveDesktopState(JSON.stringify(localState));
+          if (active) setState(localState);
+        }
+      })
+      .catch((error) => {
+        if (active) setSaveError(error instanceof Error ? error.message : String(error));
+      })
+      .finally(() => {
+        if (active) setDesktopReady(true);
+      });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
     document.documentElement.dataset.theme = state.settings.theme;
+
+    if (isDesktopApp()) {
+      if (!desktopReady) return;
+      const timer = window.setTimeout(() => {
+        void saveDesktopState(JSON.stringify(state))
+          .then(() => setSaveError(""))
+          .catch((error) => setSaveError(error instanceof Error ? error.message : String(error)));
+      }, 250);
+      return () => window.clearTimeout(timer);
+    }
+
     try {
       saveState(state);
       setSaveError("");
     } catch {
       setSaveError("O navegador não conseguiu salvar os dados. Exporte um backup e reduza a quantidade de imagens.");
     }
-  }, [state]);
+  }, [state, desktopReady]);
 
   const nav: Array<[Tab, string, string]> = [
     ["dashboard", "Visão geral", "⌂"],
