@@ -15,6 +15,7 @@ export function localeForLanguage(language: UiLanguage) {
 }
 
 const en: Record<string, string> = {
+  "O schema v8 inclui planos, estudos, templates, execuções importadas, histórico estruturado, treinamento deliberado, biblioteca de setups, versões congeladas e preferência de idioma.": "Schema v8 includes plans, studies, templates, imported executions, structured history, deliberate training, the setup library, frozen versions, and language preference.",
   "Treinamento": "Training",
   "TREINAMENTO DELIBERADO": "DELIBERATE TRAINING",
   "Laboratório de decisão": "Decision lab",
@@ -553,6 +554,7 @@ const en: Record<string, string> = {
 };
 
 const es: Record<string, string> = {
+  "O schema v8 inclui planos, estudos, templates, execuções importadas, histórico estruturado, treinamento deliberado, biblioteca de setups, versões congeladas e preferência de idioma.": "El schema v8 incluye planes, estudios, plantillas, ejecuciones importadas, historial estructurado, entrenamiento deliberado, biblioteca de setups, versiones congeladas y preferencia de idioma.",
   "Treinamento": "Entrenamiento",
   "TREINAMENTO DELIBERADO": "ENTRENAMIENTO DELIBERADO",
   "Laboratório de decisão": "Laboratorio de decisión",
