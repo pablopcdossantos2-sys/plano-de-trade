@@ -18,7 +18,7 @@ import type {
   TradeStudy,
 } from "./types";
 
-type Tab = "dashboard" | "rules" | "setups" | "plans" | "studies" | "settings";
+type Tab = "dashboard" | "rules" | "setups" | "plans" | "studies" | "history" | "settings";
 
 const ruleCategories: RuleCategory[] = ["Entrada", "Saída", "Risco", "Horário", "Contexto", "Comportamento", "Outro"];
 const defaultChecklist = [
@@ -1060,6 +1060,211 @@ function buildPlanText(p: TradePlan) {
   return `${labels.title} — ${base.asset} — ${fmtDate(base.tradingDate)}\n${source}\n\n${labels.bias}: ${localizedBias}\n${labels.conviction}: ${localizedConviction}\n${labels.changeMind}: ${base.changeMindCondition}\n${labels.preparation}: ${base.readinessScore === undefined ? planReadiness(p).score : base.readinessScore}%\n${labels.maxRisk}: ${base.maxRisk}\n${labels.maxTrades}: ${base.maxTrades}\n\n${labels.context}\n${base.marketContext}\n\n${labels.levels}\n${base.keyLevels}\n\n${labels.events}\n${base.macroEvents}\n\n${labels.counter}\n${base.evidenceAgainstThesis}\n\n${labels.noTrade}\n${base.noTradeConditions}\n\n${labels.checklist}\n${checklist}\n\n${scenarios}\n\n${labels.behavior}\n${base.behaviorPlan}\n\n${labels.market}\n${p.review.happened}\n\n${labels.execution}\n${p.review.executionSummary}\n\n${labels.observed}: ${localizedObserved}\n${labels.followed}: ${localizedFollowed}\n${labels.deviations}: ${p.review.deviations}\n${labels.result}: ${p.review.result}\n${labels.lessons}: ${p.review.lessons}\n`;
 }
 
+
+type GalleryItem = {
+  id: string;
+  src: string;
+  name: string;
+  source: string;
+  date?: string;
+};
+
+function avg(values: number[]) {
+  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+}
+
+function monthLabel(month: string) {
+  const [year, monthNumber] = month.split("-").map(Number);
+  return new Intl.DateTimeFormat(activeLocale, { month: "long", year: "numeric" }).format(new Date(year, monthNumber - 1, 1));
+}
+
+function shiftMonth(month: string, delta: number) {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const next = new Date(year, monthNumber - 1 + delta, 1);
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function calendarCells(month: string) {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const first = new Date(year, monthNumber - 1, 1);
+  const days = new Date(year, monthNumber, 0).getDate();
+  const mondayFirst = (first.getDay() + 6) % 7;
+  const cells: Array<string | null> = Array.from({ length: mondayFirst }, () => null);
+  for (let day = 1; day <= days; day += 1) cells.push(`${month}-${String(day).padStart(2, "0")}`);
+  while (cells.length % 7) cells.push(null);
+  return cells;
+}
+
+function searchHaystack(parts: Array<string | undefined>) {
+  return parts.filter(Boolean).join(" ").toLowerCase();
+}
+
+function HistoryPage({ state }: { state: AppState }) {
+  const currentMonth = isoDateLocal().slice(0, 7);
+  const [calendarMonth, setCalendarMonth] = useState(currentMonth);
+  const [asset, setAsset] = useState("");
+  const [setupId, setSetupId] = useState("");
+  const [scenario, setScenario] = useState("");
+  const [adherence, setAdherence] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [search, setSearch] = useState("");
+
+  const filteredPlans = useMemo(() => state.plans.filter((plan) => {
+    if (asset && plan.asset !== asset) return false;
+    if (setupId && plan.setupId !== setupId) return false;
+    if (scenario && plan.review.observedScenario !== scenario) return false;
+    if (adherence && plan.review.followedPlan !== adherence) return false;
+    if (dateFrom && plan.tradingDate < dateFrom) return false;
+    if (dateTo && plan.tradingDate > dateTo) return false;
+    return true;
+  }), [state.plans, asset, setupId, scenario, adherence, dateFrom, dateTo]);
+
+  const reviewedPlans = filteredPlans.filter((plan) => !!plan.review.reviewedAt);
+
+  const setupStats = useMemo(() => {
+    const groups = new Map<string, { title: string; total: number; yes: number; partial: number; no: number }>();
+    for (const plan of reviewedPlans) {
+      const key = plan.setupId || "__none__";
+      const title = plan.setupId ? state.setups.find((setup) => setup.id === plan.setupId)?.title || "Setup removido" : "Sem setup";
+      const item = groups.get(key) || { title, total: 0, yes: 0, partial: 0, no: 0 };
+      item.total += 1;
+      if (plan.review.followedPlan === "Sim") item.yes += 1;
+      else if (plan.review.followedPlan === "Parcialmente") item.partial += 1;
+      else if (plan.review.followedPlan === "Não") item.no += 1;
+      groups.set(key, item);
+    }
+    return [...groups.values()].sort((a, b) => b.total - a.total);
+  }, [reviewedPlans, state.setups]);
+
+  const violationStats = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const plan of reviewedPlans) {
+      for (const id of plan.review.violatedRuleIds) counts.set(id, (counts.get(id) || 0) + 1);
+    }
+    return [...counts.entries()].map(([id, count]) => ({
+      id,
+      count,
+      title: state.rules.find((rule) => rule.id === id)?.title || "Regra removida",
+      category: state.rules.find((rule) => rule.id === id)?.category || "Outro",
+    })).sort((a, b) => b.count - a.count);
+  }, [reviewedPlans, state.rules]);
+
+  const originStats = useMemo(() => {
+    const values = { planejada: 0, parcial: 0, improvisada: 0, naoClassificada: 0 };
+    for (const plan of reviewedPlans) {
+      if (plan.review.executionOrigin === "Planejada") values.planejada += 1;
+      else if (plan.review.executionOrigin === "Parcialmente planejada") values.parcial += 1;
+      else if (plan.review.executionOrigin === "Improvisada") values.improvisada += 1;
+      else values.naoClassificada += 1;
+    }
+    return values;
+  }, [reviewedPlans]);
+
+  const qualityPlans = reviewedPlans.filter((plan) => plan.review.readingQuality > 0 || plan.review.executionQuality > 0);
+  const readingAverage = avg(qualityPlans.map((plan) => plan.review.readingQuality).filter((value) => value > 0));
+  const executionAverage = avg(qualityPlans.map((plan) => plan.review.executionQuality).filter((value) => value > 0));
+
+  const searchResults = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return [];
+    const items: Array<{ id: string; type: string; title: string; excerpt: string }> = [];
+    for (const plan of state.plans) {
+      const scenarioText = plan.scenarios.map((item) => Object.values(item).join(" ")).join(" ");
+      const content = searchHaystack([plan.asset, plan.marketContext, plan.keyLevels, plan.macroEvents, plan.evidenceAgainstThesis, plan.changeMindCondition, plan.behaviorPlan, scenarioText, plan.review.happened, plan.review.executionSummary, plan.review.deviations, plan.review.lessons, plan.review.result]);
+      if (content.includes(query)) items.push({ id: `plan-${plan.id}`, type: "Plano", title: `${plan.asset} • ${fmtDate(plan.tradingDate)}`, excerpt: plan.marketContext || plan.review.lessons || scenarioText });
+    }
+    for (const rule of state.rules) {
+      const content = searchHaystack([rule.title, rule.category, rule.description, rule.rationale]);
+      if (content.includes(query)) items.push({ id: `rule-${rule.id}`, type: "Regra", title: rule.title, excerpt: rule.description });
+    }
+    for (const setup of state.setups) {
+      const content = searchHaystack([setup.title, setup.description, setup.marketContext, setup.entryCriteria, setup.confirmation, setup.invalidation, setup.stopModel, setup.targetModel, setup.avoid, setup.behaviorNotes]);
+      if (content.includes(query)) items.push({ id: `setup-${setup.id}`, type: "Setup", title: setup.title, excerpt: setup.description || setup.marketContext });
+    }
+    return items.slice(0, 50);
+  }, [search, state.plans, state.rules, state.setups]);
+
+  const gallery = useMemo(() => {
+    const items: GalleryItem[] = [];
+    const seen = new Set<string>();
+    const push = (attachment: Attachment, source: string, date?: string) => {
+      const key = attachment.id || attachment.dataUrl;
+      if (seen.has(key)) return;
+      seen.add(key);
+      items.push({ id: key, src: attachment.dataUrl, name: attachment.name, source, date });
+    };
+    state.plans.forEach((plan) => {
+      plan.attachments.forEach((attachment) => push(attachment, `Plano • ${plan.asset}`, plan.tradingDate));
+      plan.review.attachments.forEach((attachment) => push(attachment, `Revisão • ${plan.asset}`, plan.tradingDate));
+    });
+    state.studies.forEach((study) => study.attachments.forEach((attachment) => push(attachment, `Estudo • ${study.title}`, study.studyDate)));
+    state.setups.forEach((setup) => setup.attachments.forEach((attachment) => push(attachment, `Setup • ${setup.title}`)));
+    state.rules.forEach((rule) => rule.attachments.forEach((attachment) => push(attachment, `Regra • ${rule.title}`)));
+    return items.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  }, [state.plans, state.studies, state.setups, state.rules]);
+
+  const plansByDate = useMemo(() => {
+    const map = new Map<string, TradePlan[]>();
+    for (const plan of filteredPlans) map.set(plan.tradingDate, [...(map.get(plan.tradingDate) || []), plan]);
+    return map;
+  }, [filteredPlans]);
+
+  const weekdays = activeLanguage === "en"
+    ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    : activeLanguage === "es"
+      ? ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+      : ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+
+  return <section className="page history-page">
+    <div className="page-heading"><div><span className="eyebrow">APRENDIZADO HISTÓRICO</span><h1>Histórico e padrões</h1><p>Transforme revisões individuais em evidências sobre sua preparação, leitura e execução ao longo do tempo.</p></div></div>
+
+    <div className="panel history-filters">
+      <h2>Filtros</h2>
+      <div className="history-filter-grid">
+        <Field label="Ativo"><select value={asset} onChange={(e) => setAsset(e.target.value)}><option value="">Todos</option>{[...new Set(state.plans.map((plan) => plan.asset))].sort().map((item) => <option key={item}>{item}</option>)}</select></Field>
+        <Field label="Setup"><select value={setupId} onChange={(e) => setSetupId(e.target.value)}><option value="">Todos</option>{state.setups.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></Field>
+        <Field label="Cenário observado"><select value={scenario} onChange={(e) => setScenario(e.target.value)}><option value="">Todos</option><option>A</option><option>B</option><option>C</option><option>Nenhum</option><option>Mistura</option></select></Field>
+        <Field label="Aderência"><select value={adherence} onChange={(e) => setAdherence(e.target.value)}><option value="">Todos</option><option>Sim</option><option>Parcialmente</option><option>Não</option><option>Não operei</option></select></Field>
+        <Field label="De"><input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} /></Field>
+        <Field label="Até"><input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></Field>
+      </div>
+      <div className="history-filter-foot"><span>{filteredPlans.length} plano(s) no recorte • {reviewedPlans.length} revisado(s)</span><button onClick={() => { setAsset(""); setSetupId(""); setScenario(""); setAdherence(""); setDateFrom(""); setDateTo(""); }}>Limpar filtros</button></div>
+    </div>
+
+    <div className="panel calendar-panel">
+      <div className="history-section-title"><div><span className="eyebrow">CALENDÁRIO</span><h2>Pregões planejados e revisados</h2></div><div className="calendar-nav"><button onClick={() => setCalendarMonth((month) => shiftMonth(month, -1))}>‹</button><b>{monthLabel(calendarMonth)}</b><button onClick={() => setCalendarMonth((month) => shiftMonth(month, 1))}>›</button></div></div>
+      <div className="calendar-grid">{weekdays.map((day) => <div className="calendar-weekday" key={day}>{day}</div>)}{calendarCells(calendarMonth).map((date, index) => {
+        if (!date) return <div className="calendar-day empty-day" key={`empty-${index}`} />;
+        const dayPlans = plansByDate.get(date) || [];
+        return <div className={`calendar-day ${date === isoDateLocal() ? "today" : ""}`} key={date}><b>{Number(date.slice(-2))}</b><div>{dayPlans.map((plan) => <span className={`calendar-plan ${plan.review.reviewedAt ? "reviewed" : plan.planStatus === "frozen" ? "frozen" : ""}`} key={plan.id}>{plan.asset} {plan.review.reviewedAt ? "✓" : ""}</span>)}</div></div>;
+      })}</div>
+      <div className="calendar-legend"><span><i className="legend-dot reviewed"></i>Revisado</span><span><i className="legend-dot frozen"></i>Congelado</span><span><i className="legend-dot"></i>Rascunho</span></div>
+    </div>
+
+    <div className="history-metrics-grid">
+      <div className="panel"><span className="eyebrow">ADERÊNCIA</span><h2>Por setup</h2>{setupStats.length ? <div className="metric-list">{setupStats.map((item) => <div className="metric-row" key={item.title}><div><b>{item.title}</b><span>{item.total} revisão(ões) • {item.partial} parcial(is) • {item.no} não</span></div><strong>{item.total ? Math.round(item.yes / item.total * 100) : 0}%</strong></div>)}</div> : <div className="empty">Ainda não há revisões suficientes neste recorte.</div>}</div>
+
+      <div className="panel"><span className="eyebrow">DISCIPLINA</span><h2>Regras mais violadas</h2>{violationStats.length ? <div className="metric-list">{violationStats.map((item) => <div className="metric-row" key={item.id}><div><b>{item.title}</b><span>{item.category}</span></div><strong>{item.count}×</strong></div>)}</div> : <div className="empty">Nenhuma violação estruturada registrada neste recorte.</div>}</div>
+
+      <div className="panel"><span className="eyebrow">ORIGEM DA EXECUÇÃO</span><h2>Planejado × improvisado</h2><div className="origin-grid"><div><strong>{originStats.planejada}</strong><span>Planejada</span></div><div><strong>{originStats.parcial}</strong><span>Parcial</span></div><div><strong>{originStats.improvisada}</strong><span>Improvisada</span></div><div><strong>{originStats.naoClassificada}</strong><span>Não classificada</span></div></div></div>
+
+      <div className="panel"><span className="eyebrow">QUALIDADE</span><h2>Leitura × execução</h2><div className="quality-pair"><div><strong>{readingAverage ? readingAverage.toFixed(1) : "—"}</strong><span>leitura média / 5</span></div><div><strong>{executionAverage ? executionAverage.toFixed(1) : "—"}</strong><span>execução média / 5</span></div></div>{qualityPlans.length ? <div className="quality-history">{[...qualityPlans].sort((a, b) => b.tradingDate.localeCompare(a.tradingDate)).slice(0, 12).map((plan) => <div key={plan.id}><span>{fmtDate(plan.tradingDate)} • {plan.asset}</span><b>{plan.review.readingQuality || "—"} / {plan.review.executionQuality || "—"}</b></div>)}</div> : <div className="empty">Avalie leitura e execução nas revisões para formar este histórico.</div>}</div>
+    </div>
+
+    <div className="panel history-search">
+      <div className="history-section-title"><div><span className="eyebrow">BUSCA TEXTUAL</span><h2>Planos, regras e setups</h2></div><span>{searchResults.length} resultado(s)</span></div>
+      <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Pesquise contexto, erro, regra, setup, aprendizado, nível, cenário…" />
+      {search.trim() ? (searchResults.length ? <div className="search-results">{searchResults.map((item) => <article key={item.id}><span className="badge">{item.type}</span><div><b>{item.title}</b><p>{item.excerpt || "Correspondência encontrada."}</p></div></article>)}</div> : <div className="empty">Nenhuma correspondência encontrada.</div>) : <p className="muted-text">Digite um termo para procurar em planos, revisões, regras e setups.</p>}
+    </div>
+
+    <div className="panel gallery-panel">
+      <div className="history-section-title"><div><span className="eyebrow">GALERIA</span><h2>Imagens históricas</h2></div><span>{gallery.length} imagem(ns)</span></div>
+      {gallery.length ? <div className="history-gallery">{gallery.map((item) => <figure key={item.id}><a href={item.src} target="_blank" rel="noreferrer"><img src={item.src} alt={item.name} /></a><figcaption><b>{item.source}</b><span>{item.date ? fmtDate(item.date) : item.name}</span></figcaption></figure>)}</div> : <div className="empty">Ainda não existem imagens para compor a galeria histórica.</div>}
+    </div>
+  </section>;
+}
+
 function SettingsPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [assetsText, setAssetsText] = useState(state.settings.assets.join(", "));
@@ -1177,6 +1382,7 @@ export default function App() {
     ["setups", "Biblioteca de setups", "▦"],
     ["plans", "Planos de trade", "▤"],
     ["studies", "Estudos", "▥"],
+    ["history", "Histórico", "◫"],
     ["settings", "Configurações", "⚙"],
   ];
 
@@ -1193,6 +1399,7 @@ export default function App() {
       {tab === "setups" && <SetupsPage state={state} setState={setState} />}
       {tab === "plans" && <PlansPage state={state} setState={setState} />}
       {tab === "studies" && <StudiesPage state={state} setState={setState} />}
+      {tab === "history" && <HistoryPage state={state} />}
       {tab === "settings" && <SettingsPage state={state} setState={setState} />}
     </main>
   </div>;
