@@ -13,7 +13,7 @@ The tool is not designed to predict the market. It organizes the trader's decisi
 3. **What will I do if scenario A, B, or C materializes?**
 4. **After the session, what did the market do, what did I do, and how closely did I follow the original plan?**
 
-## Current features — v0.6
+## Current features — v0.7
 
 ### Trading system
 
@@ -69,6 +69,21 @@ You can also:
 
 The **Studies** section is separate from Trade Plans and supports analytical exercises that do not need to be tied to a future trade.
 
+### History and patterns
+
+The **History** section aggregates learning over time:
+
+- calendar of planned and reviewed sessions;
+- filters by asset, setup, scenario, adherence, and period;
+- adherence by setup;
+- most frequently violated rules;
+- planned × partially planned × improvised execution;
+- reading quality × execution quality;
+- text search across plans/reviews, rules, and setups;
+- historical image gallery.
+
+Post-session reviews now include structured fields that feed these metrics without relying only on free-text interpretation.
+
 ### Desktop application
 
 The project has a **Tauri 2** foundation for Windows distribution, including:
@@ -87,7 +102,7 @@ Desktop build and release details: [`docs/DESKTOP.md`](docs/DESKTOP.md).
 - compressed images;
 - complete JSON backup;
 - backup restoration;
-- automatic migration of older schemas to **schema v5**;
+- automatic migration of older schemas to **schema v6**;
 - light/dark theme;
 - Portuguese (Brazil), English, and Spanish interface.
 
