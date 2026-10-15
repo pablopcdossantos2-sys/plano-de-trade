@@ -13,7 +13,7 @@ The tool is not designed to predict the market. It organizes the trader's decisi
 3. **What will I do if scenario A, B, or C materializes?**
 4. **After the session, what did the market do, what did I do, and how closely did I follow the original plan?**
 
-## Current features — v0.7
+## Current features — v0.8
 
 ### Trading system
 
@@ -84,6 +84,19 @@ The **History** section aggregates learning over time:
 
 Post-session reviews now include structured fields that feed these metrics without relying only on free-text interpretation.
 
+### Trade journal integration
+
+Under **History**, executions can be imported from **JSON or CSV** and linked to plans.
+
+- automatic linking by date + asset when there is exactly one compatible plan;
+- manual link to plan and scenario A/B/C;
+- import of times, prices, quantity, direction, and result;
+- non-destructive review prefill when possible;
+- detection of trades without a plan or pre-planned scenario;
+- **Planned × traded × journaled** combined report.
+
+Format and examples: [`docs/JOURNAL-INTEGRATION.md`](docs/JOURNAL-INTEGRATION.md).
+
 ### Desktop application
 
 The project has a **Tauri 2** foundation for Windows distribution, including:
@@ -102,7 +115,7 @@ Desktop build and release details: [`docs/DESKTOP.md`](docs/DESKTOP.md).
 - compressed images;
 - complete JSON backup;
 - backup restoration;
-- automatic migration of older schemas to **schema v6**;
+- automatic migration of older schemas to **schema v7**;
 - light/dark theme;
 - Portuguese (Brazil), English, and Spanish interface.
 
