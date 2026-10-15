@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Plano de Trade",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "identifier": "com.pablopcsantos.planodetrade",
   "build": {
     "beforeDevCommand": "npm run dev -- --host 127.0.0.1 --port 5173 --strictPort",
@@ -28,7 +28,9 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": [
+      "nsis"
+    ],
     "windows": {
       "allowDowngrades": false,
       "bundleVCRuntime": true,
@@ -38,7 +40,11 @@
       },
       "nsis": {
         "installMode": "currentUser",
-        "languages": ["PortugueseBR", "English", "Spanish"],
+        "languages": [
+          "PortugueseBR",
+          "English",
+          "Spanish"
+        ],
         "displayLanguageSelector": true,
         "startMenuFolder": "Plano de Trade"
       }
