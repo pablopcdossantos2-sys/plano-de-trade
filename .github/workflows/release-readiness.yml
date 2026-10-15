@@ -1,0 +1,58 @@
+name: Signed Release Readiness
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/release-readiness.yml"
+      - "package.json"
+      - "src-tauri/Cargo.toml"
+      - "src-tauri/tauri.conf.json"
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate version synchronization
+        shell: bash
+        run: |
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          TAURI_VERSION="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          CARGO_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' src-tauri/Cargo.toml | head -n 1)"
+
+          echo "package.json: $PACKAGE_VERSION"
+          echo "tauri.conf.json: $TAURI_VERSION"
+          echo "Cargo.toml: $CARGO_VERSION"
+
+          test "$PACKAGE_VERSION" = "$TAURI_VERSION"
+          test "$PACKAGE_VERSION" = "$CARGO_VERSION"
+
+      - name: Validate updater signing configuration
+        shell: bash
+        env:
+          UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
+          SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if [ -z "$UPDATER_PUBLIC_KEY" ]; then
+            echo "::error::Repository variable TAURI_UPDATER_PUBLIC_KEY is not configured."
+            exit 1
+          fi
+
+          if [ -z "$SIGNING_PRIVATE_KEY" ]; then
+            echo "::error::Repository secret TAURI_SIGNING_PRIVATE_KEY is not configured."
+            exit 1
+          fi
+
+          if [ -z "$SIGNING_PRIVATE_KEY_PASSWORD" ]; then
+            echo "::notice::TAURI_SIGNING_PRIVATE_KEY_PASSWORD is empty. This is valid only when the private key was created without a password."
+          fi
+
+          echo "Signed updater configuration is present."
