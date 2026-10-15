@@ -97,14 +97,14 @@
 - [x] Busca textual em planos, regras e setups.
 - [x] Galeria histórica de imagens.
 
-## Fase 5 — Integração com diário de trades
+## Fase 5 — Integração com diário de trades ✅
 
-- [ ] Identificador comum entre plano, pregão e trade registrado.
-- [ ] Vincular trades executados ao plano e cenário correspondente.
-- [ ] Importar automaticamente resultado e dados objetivos da execução quando possível.
-- [ ] Comparar “planejei operar” × “operei” × “registrei no diário”.
-- [ ] Detectar trades sem cenário previamente definido.
-- [ ] Relatórios conjuntos de processo + resultado.
+- [x] Identificador comum entre plano, pregão e trade registrado.
+- [x] Vincular trades executados ao plano e cenário correspondente.
+- [x] Importar automaticamente resultado e dados objetivos da execução quando possível.
+- [x] Comparar “planejei operar” × “operei” × “registrei no diário”.
+- [x] Detectar trades sem cenário previamente definido.
+- [x] Relatórios conjuntos de processo + resultado.
 
 ## Fase 6 — Desktop e robustez
 
