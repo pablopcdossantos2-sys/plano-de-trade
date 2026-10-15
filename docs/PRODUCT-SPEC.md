@@ -180,6 +180,36 @@ A interface deve suportar, no mínimo:
 
 A preferência é persistida nas configurações e incluída no backup. A internacionalização não deve traduzir nem reescrever destrutivamente textos criados pelo usuário. Valores internos necessários à compatibilidade histórica permanecem estáveis e recebem apenas rótulos localizados na interface.
 
+### 3.9 Qualidade da preparação
+
+Antes do congelamento, o sistema calcula um score de completude de 0 a 100 baseado em critérios objetivos de preenchimento. O score não é previsão de mercado nem sinal operacional.
+
+Critérios atuais incluem:
+
+- contexto;
+- níveis importantes;
+- risco máximo;
+- condições de não operação;
+- contraprova da tese;
+- critério para mudar de opinião;
+- plano comportamental;
+- checklist concluído;
+- cenário operacional minimamente completo;
+- invalidação dos cenários utilizados.
+
+Lacunas críticas devem gerar alerta antes do congelamento, mas o usuário pode optar por congelar mesmo assim.
+
+### 3.10 Convicção e revisão da tese
+
+O plano registra uma convicção subjetiva (Baixa, Média ou Alta) apenas para comparação posterior. Também registra antecipadamente quais evidências fariam o trader mudar de opinião.
+
+### 3.11 Templates e duplicação
+
+- um plano pode ser salvo como template reutilizável;
+- templates preservam estrutura de preparação, mas reiniciam o checklist como não concluído;
+- um plano anterior pode ser duplicado sem carregar revisão, versões congeladas ou estado concluído;
+- cópias recebem novos identificadores de plano, cenários e checklist.
+
 ## 4. Persistência e portabilidade
 
 ### Web MVP
@@ -188,17 +218,21 @@ A preferência é persistida nas configurações e incluída no backup. A intern
 - imagens em Data URL compactadas;
 - backup JSON completo.
 
-### Schema v4
+### Schema v5
 
 Mantém os recursos anteriores e adiciona:
 
 - `studies: TradeStudy[]` no estado global;
+- `planTemplates: PlanTemplate[]` no estado global;
+- checklist estruturado com `id`, `text` e `checked`;
+- convicção da tese e critério para mudança de opinião;
+- score e pendências de preparação preservados nos novos snapshots;
 - armazenamento separado entre estudos e planos operacionais;
 - `language` continua suportando `pt-BR`, `en` e `es`;
 - migração automática de dados v1, v2 e v3;
 - estudos incluídos no backup JSON completo.
 
-### Migração v1/v2/v3 → v4
+### Migração v1/v2/v3/v4 → v5
 
 - regras são preservadas;
 - planos são preservados;
@@ -206,6 +240,9 @@ Mantém os recursos anteriores e adiciona:
 - backups v1 continuam recebendo as migrações de setups, contraprova e versionamento;
 - backups v1 e v2 recebem `language: "pt-BR"` como preferência inicial;
 - backups v1, v2 e v3 recebem `studies: []` na migração;
+- backups v1, v2, v3 e v4 recebem `planTemplates: []`;
+- checklists antigos em texto são migrados para itens estruturados inicialmente não concluídos;
+- backups v4 recebem os novos campos de qualidade da preparação sem inventar scores históricos para snapshots antigos;
 - planos antigos continuam como rascunho, sem snapshots retroativos inventados.
 
 ## 5. Próximas métricas úteis
