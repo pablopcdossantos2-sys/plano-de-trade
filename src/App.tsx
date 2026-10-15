@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { prepareImage } from "./images";
 import { exportBackup, initialState, loadState, parseBackup, saveState, STORAGE_KEY } from "./storage";
 import { localeForLanguage, translateUi, useInterfaceLanguage, type UiLanguage } from "./i18n";
+import { checkDesktopUpdate, desktopVersion, installDesktopUpdate, isDesktopApp, type DesktopUpdateInfo } from "./desktop";
 import type {
   AppState,
   Attachment,
@@ -603,6 +604,44 @@ function StudyEditor({ initial, assets, setups, onSave, onClose }: {
 }) {
   const [draft, setDraft] = useState<TradeStudy>(() => structuredClone(initial));
   const [message, setMessage] = useState("");
+  const [desktopCurrentVersion, setDesktopCurrentVersion] = useState<string | null>(null);
+  const [desktopUpdate, setDesktopUpdate] = useState<DesktopUpdateInfo | null>(null);
+  const [desktopUpdateStatus, setDesktopUpdateStatus] = useState("");
+  const [desktopUpdateBusy, setDesktopUpdateBusy] = useState(false);
+
+  useEffect(() => {
+    if (!isDesktopApp()) return;
+    void desktopVersion().then(setDesktopCurrentVersion).catch(() => setDesktopCurrentVersion(null));
+  }, []);
+
+  async function checkForUpdate() {
+    setDesktopUpdateBusy(true);
+    setDesktopUpdateStatus("");
+    try {
+      const update = await checkDesktopUpdate();
+      setDesktopUpdate(update);
+      setDesktopUpdateStatus(update ? "Nova versão disponível." : "Você já está usando a versão mais recente.");
+    } catch (error) {
+      setDesktopUpdate(null);
+      setDesktopUpdateStatus(error instanceof Error ? error.message : String(error));
+    } finally {
+      setDesktopUpdateBusy(false);
+    }
+  }
+
+  async function installAvailableUpdate() {
+    if (!desktopUpdate) return;
+    setDesktopUpdateBusy(true);
+    setDesktopUpdateStatus("Baixando e verificando a atualização…");
+    try {
+      await installDesktopUpdate(desktopUpdate.version);
+      setDesktopUpdateStatus("Atualização instalada. O aplicativo poderá ser reiniciado para concluir a troca de versão.");
+    } catch (error) {
+      setDesktopUpdateStatus(error instanceof Error ? error.message : String(error));
+    } finally {
+      setDesktopUpdateBusy(false);
+    }
+  }
 
   function patchScenario(id: string, next: Scenario) {
     setDraft((d) => ({ ...d, scenarios: d.scenarios.map((s) => s.id === id ? next : s) }));
@@ -918,7 +957,20 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
         <Field label="Idioma da interface"><select value={settings.language} onChange={(e) => patch({ language: e.target.value as "pt-BR" | "en" | "es" })}><option value="pt-BR">Português (Brasil)</option><option value="en">English</option><option value="es">Español</option></select></Field>
         <AttachmentField value={settings.attachments} onChange={(attachments) => patch({ attachments })} title="Imagens de referência geral" />
       </div>
-      <div className="panel"><h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v4 inclui planos, estudos, biblioteca de setups, histórico de versões congeladas e preferência de idioma.</p>
+      <div className="panel">
+        <div className="desktop-update">
+          <h2>Aplicativo desktop e atualizações</h2>
+          {isDesktopApp() ? <>
+            <p className="muted-text">Versão instalada: <b>{desktopCurrentVersion ?? "…"}</b></p>
+            <div className="stack-actions">
+              <button onClick={() => void checkForUpdate()} disabled={desktopUpdateBusy}>{desktopUpdateBusy ? "Verificando…" : "Verificar atualizações"}</button>
+              {desktopUpdate && <button className="primary" onClick={() => void installAvailableUpdate()} disabled={desktopUpdateBusy}>Instalar versão {desktopUpdate.version}</button>}
+            </div>
+            {desktopUpdate?.notes && <div className="notice"><b>Notas da versão</b><br />{desktopUpdate.notes}</div>}
+            {desktopUpdateStatus && <div className="notice">{desktopUpdateStatus}</div>}
+          </> : <p className="muted-text">Você está usando a versão web. O instalador Windows baseado em Tauri possui atualização automática integrada.</p>}
+        </div>
+        <h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v4 inclui planos, estudos, biblioteca de setups, histórico de versões congeladas e preferência de idioma.</p>
         <div className="stack-actions"><button className="primary" onClick={() => exportBackup(state)}>Exportar backup JSON</button><button onClick={() => fileRef.current?.click()}>Importar backup JSON</button><input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => void importFile(e.target.files?.[0])} /></div>
         {message && <div className="notice">{message}</div>}
         <div className="danger-zone"><h3>Zona de risco</h3><p>Apaga todos os dados deste navegador. Exporte um backup antes, se necessário.</p><button className="danger" onClick={() => { if (confirm(translateUi("Apagar todos os dados locais? Esta ação não pode ser desfeita.", activeLanguage))) { localStorage.removeItem(STORAGE_KEY); const fresh = initialState(); setState(fresh); setAssetsText(fresh.settings.assets.join(", ")); } }}>Apagar todos os dados</button></div>
