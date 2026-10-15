@@ -2,8 +2,7 @@
 
 **Leia em outros idiomas:** [English](README.en.md) · [Español](README.es.md)
 
-
-Aplicação local para preparar o trader antes do pregão, registrar cenários condicionais e comparar, depois do mercado, aquilo que foi planejado com aquilo que efetivamente aconteceu.
+Aplicação local para preparar o trader antes do pregão, organizar estudos analíticos e comparar, depois do mercado, aquilo que foi planejado com aquilo que efetivamente aconteceu.
 
 > Nome de trabalho do projeto. Sugestões de nome definitivo: **Mapa de Trade**, **Plano de Pregão** e **Trade Blueprint**.
 
@@ -16,141 +15,211 @@ A ferramenta não pretende prever o mercado. Ela organiza o processo decisório 
 3. **O que farei se o cenário A, B ou C se materializar?**
 4. **Depois do pregão, o que o mercado fez, o que eu fiz e quanto respeitei o plano original?**
 
-## Funcionalidades atuais — v0.5
+## Funcionalidades atuais — v0.6
 
 ### Sistema de trade
 
-- regras de Entrada, Saída, Risco, Horário, Contexto, Comportamento e outras;
+- regras de Entrada, Saída, Risco, Horário, Contexto e Comportamento;
 - justificativa para cada regra;
 - ativação/desativação;
 - imagens explicativas.
 
 ### Biblioteca de setups
 
-- cadastro de padrões operacionais reutilizáveis;
+- padrões operacionais reutilizáveis;
 - contexto ideal, critérios de entrada, confirmação e invalidação;
-- modelo de stop, alvo/gestão e situações a evitar;
-- cuidados comportamentais;
-- exemplos visuais por imagens;
-- aplicação de um setup diretamente ao cenário A de um plano diário, mantendo liberdade para adaptação ao contexto daquele pregão.
+- modelos de stop e alvo/gestão;
+- situações a evitar e cuidados comportamentais;
+- imagens;
+- aplicação de setup ao cenário A de um plano.
 
 ### Planos de trade
 
 - plano por ativo e data;
-- viés inicial, contexto, níveis, eventos e risco máximo;
+- viés e **convicção declarada da tese**;
+- contexto, níveis, eventos e risco máximo;
 - condições para não operar;
-- checklist pré-mercado;
-- cenários A/B/C com gatilho, confirmação, ação, invalidação, stop, alvos e proibições;
-- campo específico de **evidências contra a tese**, para reduzir viés de confirmação;
-- plano comportamental no formato “se X acontecer, farei Y”;
-- imagens do planejamento.
+- **evidências contra a tese**;
+- campo **“o que teria de acontecer para eu mudar de opinião?”**;
+- cenários A/B/C;
+- plano comportamental;
+- imagens;
+- congelamento e histórico de versões;
+- revisão pós-pregão;
+- comparação **Planejado × Mercado real × Minha execução**.
+
+### Qualidade da preparação
+
+Antes de congelar um plano, a ferramenta mostra um **score de completude da preparação** e aponta campos importantes que ainda estão vazios.
+
+O score:
+
+- mede apenas o preenchimento do processo;
+- **não prevê o mercado**;
+- **não é um sinal de entrada**;
+- não impede obrigatoriamente o congelamento, mas alerta quando existem lacunas críticas.
+
+O checklist pré-mercado agora possui estado **concluído/não concluído**.
+
+Também é possível:
+
+- salvar um plano como **template**;
+- criar novos planos a partir de templates;
+- duplicar um plano anterior **sem copiar a revisão**.
 
 ### Estudos
 
-A seção **Estudos** é mantida separada dos Planos de Trade. Ela serve para análises deliberadas que não precisam estar relacionadas a uma operação futura.
+A seção **Estudos** é separada dos Planos de Trade e serve para análises que não precisam estar ligadas a uma operação futura.
 
-Cada estudo pode registrar:
+Um estudo pode registrar:
 
-- título, data do estudo e data de mercado analisada opcional;
-- ativo e timeframe/recorte opcionais;
-- viés ou hipótese inicial;
-- setup de referência opcional;
-- pergunta ou objetivo analítico;
-- contexto, níveis e eventos/fatores relevantes;
-- evidências contra a hipótese;
-- cenários A/B/C com a mesma lógica analítica usada nos planos;
+- título e objetivo;
+- ativo, timeframe e data de mercado analisada;
+- hipótese inicial;
+- contexto, níveis e fatores relevantes;
+- contraprovas;
+- cenários A/B/C;
 - como o trader agiria diante daquele contexto;
-- conclusão, aprendizados e próximos estudos;
-- imagens e gráficos;
-- status **Em andamento** ou **Concluído**;
-- exportação em texto.
-
-Estudos possuem armazenamento próprio e não aparecem na agenda de planos operacionais.
-
-### Congelamento e versionamento
-
-O planejamento possui dois estados:
-
-- **Rascunho:** pode ser alterado livremente;
-- **Congelado:** o sistema cria uma fotografia imutável do plano antes do pregão.
-
-Se for necessário alterar um plano já congelado, o trader cria uma **nova versão**. A versão anterior permanece preservada. O histórico mostra quando cada versão foi congelada.
-
-Isso evita que a revisão pós-pregão altere retrospectivamente aquilo que o trader realmente pensava antes do mercado abrir.
-
-### Comparador Planejado × Mercado real × Minha execução
-
-Na revisão, a ferramenta separa três camadas:
-
-1. **Planejado** — utiliza a última versão congelada como referência;
-2. **Mercado real** — descreve o que efetivamente aconteceu e qual cenário predominou;
-3. **Minha execução** — registra o que o trader realmente fez, seus desvios e o resultado.
-
-Se o plano nunca foi congelado, o sistema deixa isso visualmente explícito e usa o rascunho apenas como referência não imutável.
-
-### Idiomas
-
-A interface suporta:
-
-- **Português (Brasil)**;
-- **English**;
-- **Español**.
-
-O idioma pode ser alterado em **Configurações > Idioma da interface** e a preferência é salva junto com os demais dados e incluída no backup JSON.
-
-A tradução atua apenas na interface. Textos escritos pelo trader — regras, setups, hipóteses, cenários, revisões e observações — não são reescritos ao trocar o idioma.
+- conclusão e próximos estudos;
+- gráficos e imagens;
+- status **Em andamento** ou **Concluído**.
 
 ### Aplicativo desktop
 
-- Tauri 2;
+O projeto possui base em **Tauri 2** para distribuição como aplicativo Windows.
+
+A arquitetura inclui:
+
 - instalador Windows NSIS;
 - execução em instância única;
 - painel de atualização dentro de Configurações;
-- GitHub Releases públicas como origem dos updates;
-- atualizações assinadas e instaladas sobre a versão existente, sem desinstalação manual.
+- infraestrutura para atualizações assinadas por GitHub Releases;
+- atualização sobre a versão existente, sem exigir desinstalação manual.
 
-Consulte [`docs/DESKTOP.md`](docs/DESKTOP.md) para compilação, assinatura e publicação de Releases.
+Detalhes de compilação e publicação: [`docs/DESKTOP.md`](docs/DESKTOP.md).
 
 ### Dados e backup
 
-- aplicação local, sem servidor obrigatório;
-- armazenamento no `localStorage` no MVP web;
-- imagens compactadas antes da persistência;
+- armazenamento local;
+- imagens compactadas;
 - backup completo em JSON;
 - restauração de backups;
-- **migração automática de schemas anteriores para o schema v4**, preservando planos, regras, revisões e imagens criados no MVP anterior;
-- tema claro/escuro e lista configurável de ativos.
+- migração automática de schemas antigos para o **schema v5**;
+- tema claro/escuro;
+- interface em Português (Brasil), English e Español.
 
-## Filosofia técnica
+## Instalação e execução no Windows
 
-O projeto segue princípios já usados no **Trade Journal Tracker**:
+Há duas formas de usar o projeto.
 
-- React + TypeScript;
-- dados locais e pertencentes ao usuário;
-- schema versionado;
-- migrações explícitas;
-- imagens compactadas;
-- backup integral em JSON;
-- separação progressiva entre interface, domínio e persistência.
+### Opção 1 — Instalar o aplicativo Windows
 
-No MVP web os dados são persistidos no navegador. A versão desktop já possui base em **Tauri 2** e instalador NSIS. A próxima etapa é migrar a persistência desktop para **SQLite**, com backups automáticos e maior robustez.
+Quando houver uma versão publicada na área **Releases** do GitHub:
 
-## Executar localmente
+1. Abra a página do repositório no GitHub.
+2. Entre em **Releases**.
+3. Abra a versão mais recente.
+4. Baixe o arquivo de instalação do Windows, normalmente com nome semelhante a:
+   ```text
+   Plano-de-Trade-0.x.x-Windows-x64-setup.exe
+   ```
+5. Dê dois cliques no arquivo baixado.
+6. Siga as telas do instalador.
+7. Depois da instalação, abra **Plano de Trade** pelo Menu Iniciar.
 
-Requisitos: Node.js 20+ e npm.
+As versões oficiais com updater habilitado poderão procurar novas versões em **Configurações > Aplicativo desktop e atualizações**.
+
+> Se ainda não existir uma Release com instalador, use a opção abaixo.
+
+### Opção 2 — Executar a partir do código
+
+Esta opção é útil para testar a versão mais recente do projeto.
+
+#### 1. Instale o Node.js
+
+Instale uma versão atual do **Node.js LTS**.
+
+Depois da instalação, reinicie o Prompt de Comando caso ele já estivesse aberto.
+
+#### 2. Baixe o projeto
+
+Na página do GitHub:
+
+1. clique em **Code**;
+2. clique em **Download ZIP**;
+3. quando o download terminar, clique com o botão direito no arquivo ZIP;
+4. escolha **Extrair Tudo**;
+5. abra a pasta extraída.
+
+#### 3. Abra o Prompt de Comando diretamente na pasta
+
+Uma forma simples no Windows:
+
+1. abra a pasta do projeto no Explorador de Arquivos;
+2. clique na **barra de endereço** da pasta;
+3. digite:
+   ```text
+   cmd
+   ```
+4. pressione **Enter**.
+
+Uma janela do Prompt de Comando será aberta já na pasta correta.
+
+#### 4. Instale as dependências
+
+Na janela do Prompt de Comando, digite:
 
 ```bash
 npm install
+```
+
+Pressione **Enter** e aguarde o comando terminar.
+
+Você normalmente só precisa repetir `npm install` quando baixar uma versão nova do projeto ou quando as dependências forem alteradas.
+
+#### 5. Inicie o programa
+
+Digite:
+
+```bash
 npm run dev
 ```
 
-Para verificar tipos e gerar a versão de produção:
+Quando aparecer uma linha parecida com:
+
+```text
+Local: http://localhost:5173/
+```
+
+abra esse endereço no navegador.
+
+Em muitos terminais, também é possível segurar **Ctrl** e clicar no endereço.
+
+#### 6. Não feche o Prompt de Comando enquanto estiver usando a versão web
+
+O terminal precisa permanecer aberto enquanto o servidor local estiver rodando.
+
+Para encerrar:
+
+1. volte ao Prompt de Comando;
+2. pressione **Ctrl + C**;
+3. se o Windows pedir confirmação, responda conforme indicado na tela.
+
+### Verificação opcional
+
+Para verificar se o código TypeScript está consistente:
 
 ```bash
 npm run typecheck
-npm run build
-npm run preview
 ```
+
+Para gerar uma compilação de produção:
+
+```bash
+npm run build
+```
+
+A compilação e geração do instalador desktop exigem ferramentas adicionais. Consulte [`docs/DESKTOP.md`](docs/DESKTOP.md) somente se você pretende desenvolver ou empacotar o aplicativo.
 
 ## Backup
 
@@ -159,13 +228,10 @@ Em **Configurações > Backup e recuperação**:
 - use **Exportar backup JSON** para salvar uma cópia completa;
 - use **Importar backup JSON** para restaurar dados compatíveis.
 
-Backups dos schemas v1, v2 e v3 são migrados automaticamente para v4. O sistema não fabrica versões congeladas para planos antigos, pois isso criaria uma falsa evidência de que eles já estavam travados antes do pregão.
+Backups dos schemas anteriores são migrados automaticamente para o schema atual. O sistema não cria retroativamente versões congeladas que nunca existiram.
 
 ## Documentação
 
 - [`docs/PRODUCT-SPEC.md`](docs/PRODUCT-SPEC.md) — especificação funcional;
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — fases concluídas e próximas evoluções.
-
-## Privacidade
-
-O MVP não envia planos, estudos, regras, setups ou imagens para um servidor. Os dados permanecem no armazenamento local do navegador usado para acessar a ferramenta.
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — fases concluídas e próximas evoluções;
+- [`docs/DESKTOP.md`](docs/DESKTOP.md) — compilação desktop, instalador e atualizações.
