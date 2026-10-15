@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-A integração foi projetada para não depender de um software específico. O Plano de Trade consegue importar execuções em **JSON** ou **CSV**, armazená-las localmente e vinculá-las aos planos existentes.
+A integração foi projetada para não depender de um software específico. O Trade Blueprint consegue importar execuções em **JSON** ou **CSV**, armazená-las localmente e vinculá-las aos planos existentes.
 
 O vínculo pode acontecer:
 
@@ -117,7 +117,7 @@ Ao importar um trade:
 - se houver zero ou mais de um plano compatível, o trade fica sem vínculo;
 - o vínculo pode ser corrigido manualmente depois.
 
-O `sessionId` é gerado pelo Plano de Trade e permanece estável para aquele plano/pregão.
+O `sessionId` é gerado pelo Trade Blueprint e permanece estável para aquele plano/pregão.
 
 ## Preenchimento da revisão
 
