@@ -339,3 +339,27 @@ A evolução seguinte deve introduzir SQLite com:
 - restauração assistida.
 
 A introdução de SQLite deve preservar a capacidade de exportar/importar o backup JSON.
+
+
+### 6.4 SQLite e backups
+
+No desktop, SQLite substitui o `localStorage` como persistência principal.
+
+A implementação inicial mantém o estado da aplicação como JSON versionado dentro do banco, permitindo reutilizar as mesmas migrações de schema do frontend.
+
+Requisitos implementados:
+
+- migração automática do estado web quando o banco desktop ainda está vazio;
+- salvamento com debounce via IPC;
+- backup automático diário;
+- retenção dos 10 backups automáticos mais recentes;
+- pasta de backup configurável;
+- backup manual;
+- backup pré-atualização;
+- ponto de restauração pré-restore;
+- `PRAGMA quick_check`;
+- validação do JSON e `schemaVersion`;
+- seletor nativo para pasta e arquivo de backup;
+- manutenção do backup JSON como formato portátil.
+
+A mudança para SQLite aumenta a capacidade prática para anexos e elimina o limite reduzido de armazenamento típico do navegador.
