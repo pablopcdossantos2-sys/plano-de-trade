@@ -15,6 +15,26 @@ export function localeForLanguage(language: UiLanguage) {
 }
 
 const en: Record<string, string> = {
+  "INTEGRAÇÃO COM DIÁRIO": "JOURNAL INTEGRATION",
+  "Execuções importadas": "Imported executions",
+  "Importar JSON/CSV": "Import JSON/CSV",
+  "O importador aceita nomes de colunas comuns em português ou inglês. Data e ativo são obrigatórios. Quando existir exatamente um plano para a mesma data e ativo, o vínculo é criado automaticamente.": "The importer accepts common column names in Portuguese or English. Date and asset are required. When exactly one plan exists for the same date and asset, the link is created automatically.",
+  "Nenhum trade válido foi encontrado. O arquivo precisa conter ao menos data e ativo.": "No valid trades were found. The file must contain at least date and asset.",
+  "Nenhum trade novo foi importado; os registros identificáveis já existiam.": "No new trades were imported; identifiable records already existed.",
+  "Falha ao importar o diário.": "Failed to import the journal.",
+  "trades importados": "imported trades",
+  "vinculados a planos": "linked to plans",
+  "sem plano vinculado": "without linked plan",
+  "sem cenário pré-planejado": "without pre-planned scenario",
+  "Sem vínculo": "No link",
+  "Não corresponde a cenário previamente definido.": "Does not match a previously defined scenario.",
+  "PROCESSO + RESULTADO": "PROCESS + RESULT",
+  "Planejei × operei × registrei": "Planned × traded × journaled",
+  "Planejei": "Planned",
+  "Operei": "Traded",
+  "Sem execução": "No execution",
+  "Sem registro importado": "No imported record",
+  "Ainda não há planos revisados ou execuções importadas para o relatório conjunto.": "There are no reviewed plans or imported executions for the combined report yet.",
   "Plano de Trade": "Trade Plan",
   "preparar • executar • revisar": "prepare • execute • review",
   "preparar • congelar • executar • revisar": "prepare • freeze • execute • review",
@@ -437,6 +457,26 @@ const en: Record<string, string> = {
 };
 
 const es: Record<string, string> = {
+  "INTEGRAÇÃO COM DIÁRIO": "INTEGRACIÓN CON DIARIO",
+  "Execuções importadas": "Ejecuciones importadas",
+  "Importar JSON/CSV": "Importar JSON/CSV",
+  "O importador aceita nomes de colunas comuns em português ou inglês. Data e ativo são obrigatórios. Quando existir exatamente um plano para a mesma data e ativo, o vínculo é criado automaticamente.": "El importador acepta nombres de columnas comunes en portugués o inglés. Fecha y activo son obligatorios. Cuando existe exactamente un plan para la misma fecha y activo, el vínculo se crea automáticamente.",
+  "Nenhum trade válido foi encontrado. O arquivo precisa conter ao menos data e ativo.": "No se encontraron trades válidos. El archivo debe contener al menos fecha y activo.",
+  "Nenhum trade novo foi importado; os registros identificáveis já existiam.": "No se importaron trades nuevos; los registros identificables ya existían.",
+  "Falha ao importar o diário.": "Error al importar el diario.",
+  "trades importados": "trades importados",
+  "vinculados a planos": "vinculados a planes",
+  "sem plano vinculado": "sin plan vinculado",
+  "sem cenário pré-planejado": "sin escenario preplanificado",
+  "Sem vínculo": "Sin vínculo",
+  "Não corresponde a cenário previamente definido.": "No corresponde a un escenario definido previamente.",
+  "PROCESSO + RESULTADO": "PROCESO + RESULTADO",
+  "Planejei × operei × registrei": "Planifiqué × operé × registré",
+  "Planejei": "Planifiqué",
+  "Operei": "Operé",
+  "Sem execução": "Sin ejecución",
+  "Sem registro importado": "Sin registro importado",
+  "Ainda não há planos revisados ou execuções importadas para o relatório conjunto.": "Todavía no hay planes revisados ni ejecuciones importadas para el informe conjunto.",
   "Plano de Trade": "Plan de Trading",
   "preparar • executar • revisar": "preparar • ejecutar • revisar",
   "preparar • congelar • executar • revisar": "preparar • congelar • ejecutar • revisar",
@@ -883,6 +923,14 @@ export function translateUi(source: string, language: UiLanguage) {
 
   const imageCount = source.match(/^(\d+) imagem\(ns\)$/);
   if (imageCount) return language === "en" ? `${imageCount[1]} image(s)` : `${imageCount[1]} imagen(es)`;
+
+  const journalImportCount = source.match(/^(\d+) trade\(s\) importado\(s\)\. (\d+) vinculado\(s\) automaticamente por data \+ ativo\.$/);
+  if (journalImportCount) return language === "en"
+    ? `${journalImportCount[1]} trade(s) imported. ${journalImportCount[2]} linked automatically by date + asset.`
+    : `${journalImportCount[1]} trade(s) importado(s). ${journalImportCount[2]} vinculado(s) automáticamente por fecha + activo.`;
+
+  const journalCount = source.match(/^(\d+) no diário$/);
+  if (journalCount) return language === "en" ? `${journalCount[1]} in journal` : `${journalCount[1]} en el diario`;
 
   return source;
 }
