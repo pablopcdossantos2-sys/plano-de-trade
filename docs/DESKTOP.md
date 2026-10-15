@@ -155,7 +155,7 @@ O instalador gerado por builds comuns é disponibilizado como artifact do GitHub
 
 Na v0.5, o desktop ainda reutiliza a persistência web existente. Atualizações do aplicativo não devem apagar esse armazenamento.
 
-A próxima etapa arquitetural é migrar a persistência desktop para **SQLite**, seguindo a filosofia do Trade Journal Tracker:
+A próxima etapa arquitetural é migrar a persistência desktop para **SQLite**, com foco em robustez e preservação dos dados:
 
 - dados fora da pasta de instalação;
 - backup antes de atualizações/migrações;
