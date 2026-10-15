@@ -15,6 +15,7 @@ export function localeForLanguage(language: UiLanguage) {
 }
 
 const en: Record<string, string> = {
+  "O schema v7 inclui planos, estudos, templates, execuções importadas, histórico estruturado de revisões, biblioteca de setups, versões congeladas e preferência de idioma.": "Schema v7 includes plans, studies, templates, imported executions, structured review history, the setup library, frozen versions, and language preference.",
   "INTEGRAÇÃO COM DIÁRIO": "JOURNAL INTEGRATION",
   "Execuções importadas": "Imported executions",
   "Importar JSON/CSV": "Import JSON/CSV",
@@ -457,6 +458,7 @@ const en: Record<string, string> = {
 };
 
 const es: Record<string, string> = {
+  "O schema v7 inclui planos, estudos, templates, execuções importadas, histórico estruturado de revisões, biblioteca de setups, versões congeladas e preferência de idioma.": "El schema v7 incluye planes, estudios, plantillas, ejecuciones importadas, historial estructurado de revisiones, biblioteca de setups, versiones congeladas y preferencia de idioma.",
   "INTEGRAÇÃO COM DIÁRIO": "INTEGRACIÓN CON DIARIO",
   "Execuções importadas": "Ejecuciones importadas",
   "Importar JSON/CSV": "Importar JSON/CSV",
