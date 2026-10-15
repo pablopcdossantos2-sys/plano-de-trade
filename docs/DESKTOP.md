@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-O Plano de Trade possui uma versão desktop baseada em **Tauri 2**. O objetivo é distribuir o projeto como um aplicativo Windows instalado por NSIS, mantendo a interface React/Vite e permitindo atualizações sem desinstalação manual.
+O Trade Blueprint possui uma versão desktop baseada em **Tauri 2**. O objetivo é distribuir o projeto como um aplicativo Windows instalado por NSIS, mantendo a interface React/Vite e permitindo atualizações sem desinstalação manual.
 
 ## Arquitetura
 
@@ -157,16 +157,16 @@ No aplicativo instalado, **SQLite é o armazenamento principal**.
 
 O banco fica na pasta de dados da aplicação e armazena o estado versionado completo em JSON dentro do SQLite. Essa estratégia preserva as migrações de schema existentes e remove a limitação prática de capacidade do `localStorage`.
 
-### Migração automática da versão web
+### Migração para o SQLite
 
 Na primeira execução desktop:
 
 1. o aplicativo procura um estado já salvo no SQLite;
-2. se o banco estiver vazio, lê o estado local existente da versão web;
+2. se o banco estiver vazio, usa o estado disponível no próprio WebView desktop;
 3. grava esse estado no SQLite;
 4. a partir daí, o desktop passa a salvar no banco.
 
-O conteúdo antigo do navegador não precisa ser apagado para a migração funcionar.
+Dados mantidos em um navegador externo não podem ser lidos diretamente pelo Tauri. Para migrá-los, exporte o backup JSON na versão web e importe-o no Trade Blueprint desktop. O backup mantém as migrações de schema e os anexos.
 
 ### Backups automáticos
 
