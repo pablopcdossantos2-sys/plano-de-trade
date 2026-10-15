@@ -7,6 +7,7 @@ import type {
   AppState,
   Attachment,
   ChecklistItem,
+  JournalTrade,
   PlanReview,
   PlanTemplate,
   PlanSnapshot,
@@ -83,6 +84,7 @@ function newPlan(state: AppState): TradePlan {
   const stamp = new Date().toISOString();
   return {
     id: crypto.randomUUID(),
+    sessionId: crypto.randomUUID(),
     planDate: isoDateLocal(),
     tradingDate: tomorrow(),
     asset: state.settings.assets[0] ?? "",
@@ -190,6 +192,7 @@ function duplicatePlan(plan: TradePlan): TradePlan {
   return {
     ...structuredClone(plan),
     id: crypto.randomUUID(),
+    sessionId: crypto.randomUUID(),
     planDate: isoDateLocal(),
     tradingDate: tomorrow(),
     checklist: plan.checklist.map((item) => ({ ...item, id: crypto.randomUUID(), checked: false })),
