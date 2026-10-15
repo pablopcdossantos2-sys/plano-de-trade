@@ -16,7 +16,7 @@ A ferramenta não pretende prever o mercado. Ela organiza o processo decisório 
 3. **O que farei se o cenário A, B ou C se materializar?**
 4. **Depois do pregão, o que o mercado fez, o que eu fiz e quanto respeitei o plano original?**
 
-## Funcionalidades atuais — v0.4
+## Funcionalidades atuais — v0.5
 
 ### Sistema de trade
 
@@ -100,6 +100,17 @@ O idioma pode ser alterado em **Configurações > Idioma da interface** e a pref
 
 A tradução atua apenas na interface. Textos escritos pelo trader — regras, setups, hipóteses, cenários, revisões e observações — não são reescritos ao trocar o idioma.
 
+### Aplicativo desktop
+
+- Tauri 2;
+- instalador Windows NSIS;
+- execução em instância única;
+- painel de atualização dentro de Configurações;
+- GitHub Releases públicas como origem dos updates;
+- atualizações assinadas e instaladas sobre a versão existente, sem desinstalação manual.
+
+Consulte [`docs/DESKTOP.md`](docs/DESKTOP.md) para compilação, assinatura e publicação de Releases.
+
 ### Dados e backup
 
 - aplicação local, sem servidor obrigatório;
@@ -122,7 +133,7 @@ O projeto segue princípios já usados no **Trade Journal Tracker**:
 - backup integral em JSON;
 - separação progressiva entre interface, domínio e persistência.
 
-No MVP web os dados são persistidos no navegador. O roadmap prevê uma versão desktop com **Tauri + SQLite**, com maior capacidade para imagens, backups automáticos e operação local em formato instalável.
+No MVP web os dados são persistidos no navegador. A versão desktop já possui base em **Tauri 2** e instalador NSIS. A próxima etapa é migrar a persistência desktop para **SQLite**, com backups automáticos e maior robustez.
 
 ## Executar localmente
 
