@@ -41,18 +41,24 @@ jobs:
           SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
+          missing=0
+
           if [ -z "$UPDATER_PUBLIC_KEY" ]; then
             echo "::error::Repository variable TAURI_UPDATER_PUBLIC_KEY is not configured."
-            exit 1
+            missing=1
           fi
 
           if [ -z "$SIGNING_PRIVATE_KEY" ]; then
             echo "::error::Repository secret TAURI_SIGNING_PRIVATE_KEY is not configured."
-            exit 1
+            missing=1
           fi
 
           if [ -z "$SIGNING_PRIVATE_KEY_PASSWORD" ]; then
             echo "::notice::TAURI_SIGNING_PRIVATE_KEY_PASSWORD is empty. This is valid only when the private key was created without a password."
+          fi
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
           fi
 
           echo "Signed updater configuration is present."
