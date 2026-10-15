@@ -604,45 +604,6 @@ function StudyEditor({ initial, assets, setups, onSave, onClose }: {
 }) {
   const [draft, setDraft] = useState<TradeStudy>(() => structuredClone(initial));
   const [message, setMessage] = useState("");
-  const [desktopCurrentVersion, setDesktopCurrentVersion] = useState<string | null>(null);
-  const [desktopUpdate, setDesktopUpdate] = useState<DesktopUpdateInfo | null>(null);
-  const [desktopUpdateStatus, setDesktopUpdateStatus] = useState("");
-  const [desktopUpdateBusy, setDesktopUpdateBusy] = useState(false);
-
-  useEffect(() => {
-    if (!isDesktopApp()) return;
-    void desktopVersion().then(setDesktopCurrentVersion).catch(() => setDesktopCurrentVersion(null));
-  }, []);
-
-  async function checkForUpdate() {
-    setDesktopUpdateBusy(true);
-    setDesktopUpdateStatus("");
-    try {
-      const update = await checkDesktopUpdate();
-      setDesktopUpdate(update);
-      setDesktopUpdateStatus(update ? "Nova versão disponível." : "Você já está usando a versão mais recente.");
-    } catch (error) {
-      setDesktopUpdate(null);
-      setDesktopUpdateStatus(error instanceof Error ? error.message : String(error));
-    } finally {
-      setDesktopUpdateBusy(false);
-    }
-  }
-
-  async function installAvailableUpdate() {
-    if (!desktopUpdate) return;
-    setDesktopUpdateBusy(true);
-    setDesktopUpdateStatus("Baixando e verificando a atualização…");
-    try {
-      await installDesktopUpdate(desktopUpdate.version);
-      setDesktopUpdateStatus("Atualização instalada. O aplicativo poderá ser reiniciado para concluir a troca de versão.");
-    } catch (error) {
-      setDesktopUpdateStatus(error instanceof Error ? error.message : String(error));
-    } finally {
-      setDesktopUpdateBusy(false);
-    }
-  }
-
   function patchScenario(id: string, next: Scenario) {
     setDraft((d) => ({ ...d, scenarios: d.scenarios.map((s) => s.id === id ? next : s) }));
   }
@@ -930,6 +891,45 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
   const fileRef = useRef<HTMLInputElement>(null);
   const [assetsText, setAssetsText] = useState(state.settings.assets.join(", "));
   const [message, setMessage] = useState("");
+
+  const [desktopCurrentVersion, setDesktopCurrentVersion] = useState<string | null>(null);
+  const [desktopUpdate, setDesktopUpdate] = useState<DesktopUpdateInfo | null>(null);
+  const [desktopUpdateStatus, setDesktopUpdateStatus] = useState("");
+  const [desktopUpdateBusy, setDesktopUpdateBusy] = useState(false);
+
+  useEffect(() => {
+    if (!isDesktopApp()) return;
+    void desktopVersion().then(setDesktopCurrentVersion).catch(() => setDesktopCurrentVersion(null));
+  }, []);
+
+  async function checkForUpdate() {
+    setDesktopUpdateBusy(true);
+    setDesktopUpdateStatus("");
+    try {
+      const update = await checkDesktopUpdate();
+      setDesktopUpdate(update);
+      setDesktopUpdateStatus(update ? "Nova versão disponível." : "Você já está usando a versão mais recente.");
+    } catch (error) {
+      setDesktopUpdate(null);
+      setDesktopUpdateStatus(error instanceof Error ? error.message : String(error));
+    } finally {
+      setDesktopUpdateBusy(false);
+    }
+  }
+
+  async function installAvailableUpdate() {
+    if (!desktopUpdate) return;
+    setDesktopUpdateBusy(true);
+    setDesktopUpdateStatus("Baixando e verificando a atualização…");
+    try {
+      await installDesktopUpdate(desktopUpdate.version);
+      setDesktopUpdateStatus("Atualização instalada. O aplicativo poderá ser reiniciado para concluir a troca de versão.");
+    } catch (error) {
+      setDesktopUpdateStatus(error instanceof Error ? error.message : String(error));
+    } finally {
+      setDesktopUpdateBusy(false);
+    }
+  }
 
   async function importFile(file: File | undefined) {
     if (!file) return;
