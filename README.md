@@ -15,7 +15,7 @@ A ferramenta não pretende prever o mercado. Ela organiza o processo decisório 
 3. **O que farei se o cenário A, B ou C se materializar?**
 4. **Depois do pregão, o que o mercado fez, o que eu fiz e quanto respeitei o plano original?**
 
-## Funcionalidades atuais — v0.6
+## Funcionalidades atuais — v0.7
 
 ### Sistema de trade
 
@@ -84,6 +84,21 @@ Um estudo pode registrar:
 - gráficos e imagens;
 - status **Em andamento** ou **Concluído**.
 
+### Histórico e padrões
+
+A seção **Histórico** reúne o aprendizado acumulado:
+
+- calendário de pregões planejados e revisados;
+- filtros por ativo, setup, cenário, aderência e período;
+- aderência por setup;
+- regras mais violadas;
+- execução planejada × parcialmente planejada × improvisada;
+- qualidade da leitura × qualidade da execução;
+- busca textual em planos, revisões, regras e setups;
+- galeria histórica de imagens.
+
+As revisões pós-pregão possuem campos estruturados para alimentar essas métricas sem depender apenas de interpretação de texto livre.
+
 ### Aplicativo desktop
 
 O projeto possui base em **Tauri 2** para distribuição como aplicativo Windows.
@@ -104,7 +119,7 @@ Detalhes de compilação e publicação: [`docs/DESKTOP.md`](docs/DESKTOP.md).
 - imagens compactadas;
 - backup completo em JSON;
 - restauração de backups;
-- migração automática de schemas antigos para o **schema v5**;
+- migração automática de schemas antigos para o **schema v6**;
 - tema claro/escuro;
 - interface em Português (Brasil), English e Español.
 
