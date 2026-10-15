@@ -1116,7 +1116,226 @@ function searchHaystack(parts: Array<string | undefined>) {
   return parts.filter(Boolean).join(" ").toLowerCase();
 }
 
-function HistoryPage({ state }: { state: AppState }) {
+
+function normalizeImportKey(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function parseCsvLine(line: string, delimiter: string) {
+  const values: string[] = [];
+  let current = "";
+  let quoted = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    if (char === '"') {
+      if (quoted && line[index + 1] === '"') {
+        current += '"';
+        index += 1;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (char === delimiter && !quoted) {
+      values.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  values.push(current.trim());
+  return values;
+}
+
+function parseDelimitedRows(text: string) {
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter((line) => line.trim());
+  if (lines.length < 2) return [];
+  const first = lines[0];
+  const delimiter = (first.match(/;/g)?.length || 0) > (first.match(/,/g)?.length || 0) ? ";" : ",";
+  const headers = parseCsvLine(first, delimiter);
+  return lines.slice(1).map((line) => {
+    const values = parseCsvLine(line, delimiter);
+    return Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""]));
+  });
+}
+
+function normalizedTradeDate(value: unknown) {
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+  const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const br = text.match(/^(\d{2})[\/-](\d{2})[\/-](\d{4})$/);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+  const parsed = new Date(text);
+  return Number.isNaN(parsed.getTime()) ? "" : isoDateLocal(parsed);
+}
+
+function importedValue(row: Record<string, unknown>, aliases: string[]) {
+  const entries = Object.entries(row);
+  for (const alias of aliases) {
+    const normalizedAlias = normalizeImportKey(alias);
+    const found = entries.find(([key]) => normalizeImportKey(key) === normalizedAlias);
+    if (found && found[1] !== undefined && found[1] !== null) return String(found[1]).trim();
+  }
+  return "";
+}
+
+function journalTradeFromRow(row: Record<string, unknown>, source: string, state: AppState): JournalTrade | null {
+  const tradingDate = normalizedTradeDate(importedValue(row, ["tradingDate", "tradeDate", "date", "data", "dataPregao"]));
+  const asset = importedValue(row, ["asset", "ativo", "symbol", "ticker"]).toUpperCase();
+  if (!tradingDate || !asset) return null;
+
+  const rawScenario = importedValue(row, ["scenario", "cenario", "scenarioLabel"]).toUpperCase();
+  const scenarioLabel: JournalTrade["scenarioLabel"] = rawScenario === "A" || rawScenario === "B" || rawScenario === "C" ? rawScenario : "";
+  const requestedPlanId = importedValue(row, ["planId", "planoId"]);
+  const requestedPlan = requestedPlanId ? state.plans.find((plan) => plan.id === requestedPlanId) : undefined;
+  const candidates = state.plans.filter((plan) => plan.tradingDate === tradingDate && plan.asset.toUpperCase() === asset);
+  const plan = requestedPlan ?? (candidates.length === 1 ? candidates[0] : undefined);
+
+  return {
+    id: crypto.randomUUID(),
+    externalId: importedValue(row, ["externalId", "tradeId", "id", "codigo", "ticket"]),
+    tradingDate,
+    asset,
+    side: importedValue(row, ["side", "direction", "lado", "direcao", "tipo"]),
+    entryTime: importedValue(row, ["entryTime", "horaEntrada", "entradaHora", "openTime"]),
+    exitTime: importedValue(row, ["exitTime", "horaSaida", "saidaHora", "closeTime"]),
+    entryPrice: importedValue(row, ["entryPrice", "precoEntrada", "entrada", "openPrice"]),
+    exitPrice: importedValue(row, ["exitPrice", "precoSaida", "saida", "closePrice"]),
+    quantity: importedValue(row, ["quantity", "qty", "quantidade", "contratos"]),
+    result: importedValue(row, ["result", "resultado", "pnl", "profit", "lucro"]),
+    notes: importedValue(row, ["notes", "nota", "observacao", "observacoes", "comment"]),
+    planId: plan?.id,
+    sessionId: plan?.sessionId,
+    scenarioLabel,
+    importSource: source,
+    importedAt: new Date().toISOString(),
+  };
+}
+
+function parseJournalImport(text: string, source: string, state: AppState) {
+  let rows: Array<Record<string, unknown>> = [];
+  const trimmed = text.trim();
+  if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
+    const parsed = JSON.parse(trimmed) as unknown;
+    const rawRows = Array.isArray(parsed)
+      ? parsed
+      : parsed && typeof parsed === "object" && Array.isArray((parsed as { trades?: unknown[] }).trades)
+        ? (parsed as { trades: unknown[] }).trades
+        : parsed && typeof parsed === "object" && Array.isArray((parsed as { data?: unknown[] }).data)
+          ? (parsed as { data: unknown[] }).data
+          : [];
+    rows = rawRows.filter((item): item is Record<string, unknown> => !!item && typeof item === "object" && !Array.isArray(item));
+  } else {
+    rows = parseDelimitedRows(text);
+  }
+  return rows.map((row) => journalTradeFromRow(row, source, state)).filter((trade): trade is JournalTrade => !!trade);
+}
+
+function journalTradeKey(trade: JournalTrade) {
+  return trade.externalId
+    ? `${trade.importSource}::${trade.externalId}`
+    : [trade.tradingDate, trade.asset, trade.entryTime, trade.exitTime, trade.entryPrice, trade.exitPrice, trade.quantity, trade.result].join("::");
+}
+
+function journalExecutionSummary(trades: JournalTrade[]) {
+  return trades.map((trade) => {
+    const pieces = [trade.entryTime, trade.side, trade.quantity && `${trade.quantity}x`, trade.entryPrice && `@${trade.entryPrice}`].filter(Boolean).join(" ");
+    const exit = [trade.exitTime, trade.exitPrice && `@${trade.exitPrice}`, trade.result].filter(Boolean).join(" ");
+    return [pieces, exit].filter(Boolean).join(" → ");
+  }).filter(Boolean).join("\n");
+}
+
+function tradeHasPreplannedScenario(trade: JournalTrade, plan?: TradePlan) {
+  if (!plan || !trade.scenarioLabel) return false;
+  const reference = latestFrozenVersion(plan);
+  const scenarios = reference?.scenarios ?? plan.scenarios;
+  const scenario = scenarios.find((item) => item.label === trade.scenarioLabel);
+  return !!scenario && !!(scenario.title.trim() || scenario.trigger.trim() || scenario.action.trim());
+}
+
+function JournalIntegration({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [message, setMessage] = useState("");
+
+  async function importFile(file: File | undefined) {
+    if (!file) return;
+    try {
+      const parsed = parseJournalImport(await file.text(), file.name, state);
+      if (!parsed.length) {
+        setMessage("Nenhum trade válido foi encontrado. O arquivo precisa conter ao menos data e ativo.");
+        return;
+      }
+      const existing = new Set(state.journalTrades.map(journalTradeKey));
+      const fresh = parsed.filter((trade) => !existing.has(journalTradeKey(trade)));
+      if (!fresh.length) {
+        setMessage("Nenhum trade novo foi importado; os registros identificáveis já existiam.");
+        return;
+      }
+
+      setState((current) => {
+        const byPlan = new Map<string, JournalTrade[]>();
+        for (const trade of fresh) if (trade.planId) byPlan.set(trade.planId, [...(byPlan.get(trade.planId) || []), trade]);
+        const plans = current.plans.map((plan) => {
+          const imported = byPlan.get(plan.id);
+          if (!imported?.length) return plan;
+          const summary = journalExecutionSummary(imported);
+          const results = imported.map((trade) => trade.result).filter(Boolean).join(" | ");
+          return {
+            ...plan,
+            review: {
+              ...plan.review,
+              executionSummary: plan.review.executionSummary || summary,
+              result: plan.review.result || results,
+            },
+          };
+        });
+        return { ...current, plans, journalTrades: [...fresh, ...current.journalTrades] };
+      });
+      const autoLinked = fresh.filter((trade) => !!trade.planId).length;
+      setMessage(`${fresh.length} trade(s) importado(s). ${autoLinked} vinculado(s) automaticamente por data + ativo.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha ao importar o diário.");
+    }
+  }
+
+  function patchTrade(id: string, patch: Partial<JournalTrade>) {
+    setState((current) => ({ ...current, journalTrades: current.journalTrades.map((trade) => trade.id === id ? { ...trade, ...patch } : trade) }));
+  }
+
+  function linkPlan(trade: JournalTrade, planId: string) {
+    const plan = state.plans.find((item) => item.id === planId);
+    patchTrade(trade.id, { planId: plan?.id, sessionId: plan?.sessionId, scenarioLabel: plan ? trade.scenarioLabel : "" });
+  }
+
+  const linked = state.journalTrades.filter((trade) => !!trade.planId).length;
+  const unlinked = state.journalTrades.length - linked;
+  const scenarioIssues = state.journalTrades.filter((trade) => !tradeHasPreplannedScenario(trade, state.plans.find((plan) => plan.id === trade.planId))).length;
+
+  const reportPlans = state.plans.filter((plan) => state.journalTrades.some((trade) => trade.planId === plan.id) || !!plan.review.executionSummary || !!plan.review.reviewedAt)
+    .sort((a, b) => b.tradingDate.localeCompare(a.tradingDate));
+
+  return <div className="panel journal-panel">
+    <div className="history-section-title"><div><span className="eyebrow">INTEGRAÇÃO COM DIÁRIO</span><h2>Execuções importadas</h2></div><button className="primary" onClick={() => fileRef.current?.click()}>Importar JSON/CSV</button></div>
+    <input ref={fileRef} hidden type="file" accept=".json,.csv,text/csv,application/json" onChange={(e) => { void importFile(e.target.files?.[0]); e.currentTarget.value = ""; }} />
+    <p className="muted-text">O importador aceita nomes de colunas comuns em português ou inglês. Data e ativo são obrigatórios. Quando existir exatamente um plano para a mesma data e ativo, o vínculo é criado automaticamente.</p>
+    {message && <div className="notice">{message}</div>}
+
+    <div className="journal-stats"><div><strong>{state.journalTrades.length}</strong><span>trades importados</span></div><div><strong>{linked}</strong><span>vinculados a planos</span></div><div><strong>{unlinked}</strong><span>sem plano vinculado</span></div><div><strong>{scenarioIssues}</strong><span>sem cenário pré-planejado</span></div></div>
+
+    {!!state.journalTrades.length && <div className="journal-table-wrap"><table className="journal-table"><thead><tr><th>Data</th><th>Ativo</th><th>Execução</th><th>Resultado</th><th>Plano</th><th>Cenário</th><th></th></tr></thead><tbody>{state.journalTrades.slice(0, 100).map((trade) => {
+      const linkedPlan = state.plans.find((plan) => plan.id === trade.planId);
+      return <tr key={trade.id}><td>{fmtDate(trade.tradingDate)}</td><td><b>{trade.asset}</b><small>{trade.side}</small></td><td><span>{[trade.entryTime, trade.entryPrice].filter(Boolean).join(" @ ") || "—"}</span><small>{[trade.exitTime, trade.exitPrice].filter(Boolean).join(" @ ")}</small></td><td>{trade.result || "—"}</td><td><select value={trade.planId ?? ""} onChange={(e) => linkPlan(trade, e.target.value)}><option value="">Sem vínculo</option>{state.plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.asset} • {fmtDate(plan.tradingDate)}</option>)}</select></td><td><select value={trade.scenarioLabel} disabled={!linkedPlan} onChange={(e) => patchTrade(trade.id, { scenarioLabel: e.target.value as JournalTrade["scenarioLabel"] })}><option value="">—</option><option>A</option><option>B</option><option>C</option></select>{linkedPlan && !tradeHasPreplannedScenario(trade, linkedPlan) && <small className="warning-text">Não corresponde a cenário previamente definido.</small>}</td><td><button className="tiny danger" onClick={() => setState((current) => ({ ...current, journalTrades: current.journalTrades.filter((item) => item.id !== trade.id) }))}>Remover</button></td></tr>;
+    })}</tbody></table></div>}
+
+    <div className="history-section-title journal-report-title"><div><span className="eyebrow">PROCESSO + RESULTADO</span><h3>Planejei × operei × registrei</h3></div></div>
+    {reportPlans.length ? <div className="joint-report">{reportPlans.slice(0, 50).map((plan) => {
+      const trades = state.journalTrades.filter((trade) => trade.planId === plan.id);
+      const operated = !!plan.review.executionSummary || trades.length > 0;
+      return <div className="joint-report-row" key={plan.id}><div><b>{fmtDate(plan.tradingDate)} • {plan.asset}</b><span>{state.setups.find((setup) => setup.id === plan.setupId)?.title || "Sem setup"}</span></div><span className="badge ok">Planejei</span><span className={`badge ${operated ? "ok" : ""}`}>{operated ? "Operei" : "Sem execução"}</span><span className={`badge ${trades.length ? "ok" : "warning"}`}>{trades.length ? `${trades.length} no diário` : "Sem registro importado"}</span><span>{plan.review.followedPlan || "—"}</span><span>{plan.review.readingQuality || "—"} / {plan.review.executionQuality || "—"}</span><b>{trades.map((trade) => trade.result).filter(Boolean).join(" | ") || plan.review.result || "—"}</b></div>;
+    })}</div> : <div className="empty">Ainda não há planos revisados ou execuções importadas para o relatório conjunto.</div>}
+  </div>;
+}
+
+function HistoryPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
   const currentMonth = isoDateLocal().slice(0, 7);
   const [calendarMonth, setCalendarMonth] = useState(currentMonth);
   const [asset, setAsset] = useState("");
@@ -1279,6 +1498,8 @@ function HistoryPage({ state }: { state: AppState }) {
       <div className="history-section-title"><div><span className="eyebrow">GALERIA</span><h2>Imagens históricas</h2></div><span>{gallery.length} imagem(ns)</span></div>
       {gallery.length ? <div className="history-gallery">{gallery.map((item) => <figure key={item.id}><a href={item.src} target="_blank" rel="noreferrer"><img src={item.src} alt={item.name} /></a><figcaption><b>{item.source}</b><span>{item.date ? fmtDate(item.date) : item.name}</span></figcaption></figure>)}</div> : <div className="empty">Ainda não existem imagens para compor a galeria histórica.</div>}
     </div>
+
+    <JournalIntegration state={state} setState={setState} />
   </section>;
 }
 
@@ -1416,7 +1637,7 @@ export default function App() {
       {tab === "setups" && <SetupsPage state={state} setState={setState} />}
       {tab === "plans" && <PlansPage state={state} setState={setState} />}
       {tab === "studies" && <StudiesPage state={state} setState={setState} />}
-      {tab === "history" && <HistoryPage state={state} />}
+      {tab === "history" && <HistoryPage state={state} setState={setState} />}
       {tab === "settings" && <SettingsPage state={state} setState={setState} />}
     </main>
   </div>;
