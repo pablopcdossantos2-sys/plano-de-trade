@@ -1592,7 +1592,7 @@ function TrainingPage({ state, setState }: { state: AppState; setState: React.Di
   }
 
   function saveReplay() {
-    if (!selectedPlan || !decisionNow.trim() || !interpretationNow.trim()) return;
+    if (!selectedPlan || !decisionNow.trim() || !interpretationNow.trim() || !revealed) return;
     const record: TrainingRecord = {
       id: crypto.randomUUID(),
       type: trainingType,
@@ -1699,7 +1699,7 @@ function TrainingPage({ state, setState }: { state: AppState; setState: React.Di
         <Field label="O que mudou entre o que pensei naquela época e como interpreto agora?"><textarea rows={5} value={comparisonNotes} onChange={(e) => setComparisonNotes(e.target.value)} placeholder="Compare critérios, vieses, evidências ignoradas, qualidade da decisão e disciplina." /></Field>
       </div>}
       {trainingMessage && <div className="notice">{trainingMessage}</div>}
-      <div className="actions"><button onClick={revealOutcome} disabled={revealed}>Revelar desfecho</button><button className="primary" onClick={saveReplay} disabled={!decisionNow.trim() || !interpretationNow.trim()}>Salvar exercício</button></div>
+      <div className="actions"><button onClick={revealOutcome} disabled={revealed}>Revelar desfecho</button><button className="primary" onClick={saveReplay} disabled={!decisionNow.trim() || !interpretationNow.trim() || !revealed}>Salvar exercício</button></div>
     </div>}
 
     <div className="training-layout">
@@ -1904,7 +1904,7 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
             </div>
           </> : <p className="muted-text">Você está usando a versão web. O instalador Windows baseado em Tauri possui atualização automática integrada.</p>}
         </div>
-        <h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v7 inclui planos, estudos, templates, execuções importadas, histórico estruturado de revisões, biblioteca de setups, versões congeladas e preferência de idioma.</p>
+        <h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v8 inclui planos, estudos, templates, execuções importadas, histórico estruturado, treinamento deliberado, biblioteca de setups, versões congeladas e preferência de idioma.</p>
         <div className="stack-actions"><button className="primary" onClick={() => exportBackup(state)}>Exportar backup JSON</button><button onClick={() => fileRef.current?.click()}>Importar backup JSON</button><input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => void importFile(e.target.files?.[0])} /></div>
         {message && <div className="notice">{message}</div>}
         <div className="danger-zone"><h3>Zona de risco</h3><p>Apaga todos os dados deste navegador. Exporte um backup antes, se necessário.</p><button className="danger" onClick={() => { if (confirm(translateUi("Apagar todos os dados locais? Esta ação não pode ser desfeita.", activeLanguage))) { localStorage.removeItem(STORAGE_KEY); const fresh = initialState(); setState(fresh); setAssetsText(fresh.settings.assets.join(", ")); } }}>Apagar todos os dados</button></div>
