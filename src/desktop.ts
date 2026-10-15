@@ -82,7 +82,7 @@ export async function chooseDesktopBackupFile() {
   if (!isDesktopApp()) return null;
   const selected = await open({
     multiple: false,
-    title: "Restaurar backup do Plano de Trade",
+    title: "Restaurar backup do Trade Blueprint",
     filters: [{ name: "Backup JSON", extensions: ["json"] }],
   });
   return typeof selected === "string" ? selected : null;
