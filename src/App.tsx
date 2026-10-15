@@ -515,6 +515,20 @@ function VersionHistory({ plan }: { plan: TradePlan }) {
   </div>;
 }
 
+function QualityGate({ plan }: { plan: TradePlan }) {
+  const readiness = planReadiness(plan);
+  const tone = readiness.score === 100 ? "ok" : readiness.score >= 70 ? "warning" : "danger";
+
+  return <div className={`quality-gate ${tone}`}>
+    <div className="quality-score"><strong>{readiness.score}%</strong><span>preparação preenchida</span></div>
+    <div className="quality-body">
+      <b>{readiness.score === 100 ? "Preparação completa pelos critérios atuais." : "Pontos pendentes antes do congelamento"}</b>
+      <p>Este score mede somente a completude do processo de preparação. Ele não prevê o mercado e não é um sinal de entrada.</p>
+      {!!readiness.issues.length && <ul>{readiness.issues.map((issue) => <li key={issue}>{issue}</li>)}</ul>}
+    </div>
+  </div>;
+}
+
 function ComparisonPanel({ plan }: { plan: TradePlan }) {
   const frozen = latestFrozenVersion(plan);
   const reference = frozen ?? currentReference(plan);
@@ -531,6 +545,9 @@ function ComparisonPanel({ plan }: { plan: TradePlan }) {
         <span className="comparison-number">1</span><h4>Planejado</h4>
         <dl>
           <div><dt>Viés</dt><dd>{reference.bias}</dd></div>
+          <div><dt>Convicção declarada</dt><dd>{reference.thesisConviction || "Não registrada"}</dd></div>
+          <div><dt>Mudaria de opinião se</dt><dd>{reference.changeMindCondition || "Não registrado"}</dd></div>
+          <div><dt>Preparação</dt><dd>{reference.readinessScore === undefined ? "Não registrada nesta versão" : `${reference.readinessScore}%`}</dd></div>
           <div><dt>Cenários</dt><dd>{scenarioSummary}</dd></div>
           <div><dt>Contra a tese</dt><dd>{reference.evidenceAgainstThesis || "Não registrado"}</dd></div>
           <div><dt>Não operar se</dt><dd>{reference.noTradeConditions || "Não registrado"}</dd></div>
@@ -557,11 +574,12 @@ function ComparisonPanel({ plan }: { plan: TradePlan }) {
   </div>;
 }
 
-function PlanEditor({ initial, assets, setups, onPersist, onClose }: { initial: TradePlan; assets: string[]; setups: TradeSetup[]; onPersist: (p: TradePlan) => void; onClose: () => void }) {
+function PlanEditor({ initial, assets, setups, onPersist, onCreateTemplate, onClose }: { initial: TradePlan; assets: string[]; setups: TradeSetup[]; onPersist: (p: TradePlan) => void; onCreateTemplate: (template: PlanTemplate) => void; onClose: () => void }) {
   const [draft, setDraft] = useState<TradePlan>(() => structuredClone(initial));
   const [section, setSection] = useState<"plan" | "review">("plan");
   const [notice, setNotice] = useState("");
   const isFrozen = draft.planStatus === "frozen";
+  const readiness = planReadiness(draft);
 
   function patchScenario(id: string, next: Scenario) {
     setDraft((d) => ({ ...d, scenarios: d.scenarios.map((s) => s.id === id ? next : s) }));
@@ -577,6 +595,7 @@ function PlanEditor({ initial, assets, setups, onPersist, onClose }: { initial: 
 
   function freeze() {
     if (!draft.asset.trim() || !draft.tradingDate) return;
+    if (readiness.criticalIssues.length && !confirm(translateUi("Há pontos críticos pendentes na preparação. Deseja congelar mesmo assim?", activeLanguage))) return;
     const version = draft.versions.length + 1;
     const snapshot = snapshotFromPlan(draft, version);
     const next: TradePlan = {
@@ -632,6 +651,7 @@ function PlanEditor({ initial, assets, setups, onPersist, onClose }: { initial: 
       {isFrozen ? <button onClick={createNewVersion}>Criar nova versão</button> : <button className="primary" onClick={freeze}>Congelar versão {draft.versions.length + 1}</button>}
     </div>
     <VersionHistory plan={draft} />
+    {!isFrozen && section === "plan" && <QualityGate plan={draft} />}
     {notice && <div className="notice">{notice}</div>}
 
     {section === "plan" ? <fieldset className="freeze-fieldset" disabled={isFrozen}>
@@ -639,6 +659,7 @@ function PlanEditor({ initial, assets, setups, onPersist, onClose }: { initial: 
         <Field label="Ativo"><input list="assets" value={draft.asset} onChange={(e) => setDraft({ ...draft, asset: e.target.value.toUpperCase() })} /><datalist id="assets">{assets.map((a) => <option key={a} value={a} />)}</datalist></Field>
         <Field label="Data do pregão"><input type="date" value={draft.tradingDate} onChange={(e) => setDraft({ ...draft, tradingDate: e.target.value })} /></Field>
         <Field label="Viés inicial"><select value={draft.bias} onChange={(e) => setDraft({ ...draft, bias: e.target.value as TradePlan["bias"] })}><option>Alta</option><option>Baixa</option><option>Neutro</option></select></Field>
+        <Field label="Convicção na tese" hint="Registro subjetivo para revisão posterior; não é um sinal operacional."><select value={draft.thesisConviction} onChange={(e) => setDraft({ ...draft, thesisConviction: e.target.value as TradePlan["thesisConviction"] })}><option value="">Não avaliada</option><option>Baixa</option><option>Média</option><option>Alta</option></select></Field>
       </div>
 
       <div className="setup-apply">
@@ -662,6 +683,9 @@ function PlanEditor({ initial, assets, setups, onPersist, onClose }: { initial: 
         <Field label="Evidências contra minha tese / por que posso estar errado?" hint="Procure deliberadamente dados que contradigam seu viés. O objetivo é reduzir viés de confirmação.">
           <textarea rows={5} value={draft.evidenceAgainstThesis} onChange={(e) => setDraft({ ...draft, evidenceAgainstThesis: e.target.value })} placeholder="Ex.: fluxo vendedor apesar do viés de alta; dólar rompendo resistência; preço rejeitando a região que sustentava minha hipótese…" />
         </Field>
+        <Field label="O que teria de acontecer para eu mudar de opinião?" hint="Defina antes do pregão quais evidências fariam você abandonar ou revisar a tese.">
+          <textarea rows={4} value={draft.changeMindCondition} onChange={(e) => setDraft({ ...draft, changeMindCondition: e.target.value })} placeholder="Ex.: aceitação abaixo da VWAP com aumento de agressão vendedora e perda do suporte que sustentava a tese." />
+        </Field>
       </div>
 
       <div className="form-grid two">
@@ -669,7 +693,7 @@ function PlanEditor({ initial, assets, setups, onPersist, onClose }: { initial: 
         <Field label="Máximo de operações"><input type="number" min={1} value={draft.maxTrades} onChange={(e) => setDraft({ ...draft, maxTrades: Math.max(1, Number(e.target.value) || 1) })} /></Field>
       </div>
 
-      <div className="checklist-box"><h3>Checklist pré-mercado</h3>{draft.checklist.map((item, i) => <div className="editable-check" key={i}><span>{i + 1}</span><input value={item} onChange={(e) => setDraft({ ...draft, checklist: draft.checklist.map((x, j) => j === i ? e.target.value : x) })} /><button className="tiny danger" type="button" onClick={() => setDraft({ ...draft, checklist: draft.checklist.filter((_, j) => j !== i) })}>×</button></div>)}<button className="small" type="button" onClick={() => setDraft({ ...draft, checklist: [...draft.checklist, ""] })}>+ Item</button></div>
+      <div className="checklist-box"><h3>Checklist pré-mercado</h3>{draft.checklist.map((item, i) => <div className="editable-check" key={item.id}><input className="check-toggle" type="checkbox" checked={item.checked} onChange={(e) => setDraft({ ...draft, checklist: draft.checklist.map((x) => x.id === item.id ? { ...x, checked: e.target.checked } : x) })} /><span>{i + 1}</span><input value={item.text} onChange={(e) => setDraft({ ...draft, checklist: draft.checklist.map((x) => x.id === item.id ? { ...x, text: e.target.value } : x) })} /><button className="tiny danger" type="button" onClick={() => setDraft({ ...draft, checklist: draft.checklist.filter((x) => x.id !== item.id) })}>×</button></div>)}<button className="small" type="button" onClick={() => setDraft({ ...draft, checklist: [...draft.checklist, { id: crypto.randomUUID(), text: "", checked: false }] })}>+ Item</button></div>
 
       <div className="scenario-grid">{draft.scenarios.map((scenario) => <ScenarioEditor key={scenario.id} scenario={scenario} onChange={(next) => patchScenario(scenario.id, next)} />)}</div>
 
@@ -693,6 +717,7 @@ function PlanEditor({ initial, assets, setups, onPersist, onClose }: { initial: 
 
     <div className="actions sticky-actions">
       <button className="primary" onClick={() => persist(draft, section === "review" ? "Revisão salva." : "Rascunho salvo.")}>Salvar</button>
+      {section === "plan" && !isFrozen && <button onClick={() => { const title = prompt(translateUi("Nome do template", activeLanguage), `${draft.asset || "Plano"} — ${draft.scenarios.find((scenario) => scenario.label === "A")?.title || "Template"}`); if (title?.trim()) { onCreateTemplate(templateFromPlan(draft, title.trim())); setNotice("Template de plano salvo."); } }}>Salvar como template</button>}
       <button onClick={() => { persist(draft, "Plano salvo."); onClose(); }}>Salvar e fechar</button>
       <button onClick={onClose}>Fechar sem salvar mudanças atuais</button>
     </div>
