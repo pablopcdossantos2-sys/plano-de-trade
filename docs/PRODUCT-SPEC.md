@@ -217,3 +217,46 @@ Mantém os recursos anteriores e adiciona:
 - diferença entre “tese correta” e “execução correta”;
 - frequência com que as evidências contra a tese anteciparam uma invalidação;
 - resultados por operações planejadas versus improvisadas.
+
+
+## 6. Aplicativo desktop
+
+### 6.1 Empacotamento
+
+A versão desktop utiliza **Tauri 2** e deve ser distribuída no Windows por instalador **NSIS** em modo de instalação por usuário.
+
+Requisitos:
+
+- nenhuma dependência de Node.js no computador do usuário final;
+- uma única instância do aplicativo;
+- preservação dos dados durante atualização/reinstalação;
+- versionamento sincronizado entre frontend, Cargo e configuração Tauri.
+
+### 6.2 Atualizações
+
+O aplicativo desktop possui um atualizador integrado.
+
+- origem: GitHub Releases públicas;
+- manifesto: `latest.json`;
+- artefatos obrigatoriamente assinados;
+- verificação criptográfica antes da instalação;
+- instalação sobre a versão existente, sem exigir desinstalação manual;
+- modo Windows `passive`;
+- nenhuma permissão para downgrade.
+
+A interface deve exibir versão instalada, disponibilidade de nova versão, notas da Release e ação para instalar.
+
+### 6.3 Persistência desktop
+
+Na primeira fase Tauri, a aplicação continua compatível com a persistência web existente.
+
+A evolução seguinte deve introduzir SQLite com:
+
+- banco fora da pasta de instalação;
+- migração segura dos dados existentes;
+- backup pré-migração e pré-atualização;
+- verificação de integridade;
+- backups rotativos;
+- restauração assistida.
+
+A introdução de SQLite deve preservar a capacidade de exportar/importar o backup JSON.
