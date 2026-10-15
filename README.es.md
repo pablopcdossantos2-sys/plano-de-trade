@@ -13,7 +13,7 @@ La herramienta no intenta predecir el mercado. Organiza el proceso de decisión 
 3. **¿Qué haré si se materializa el escenario A, B o C?**
 4. **Después de la sesión, qué hizo el mercado, qué hice yo y cuánto respeté el plan original?**
 
-## Funcionalidades actuales — v0.10
+## Funcionalidades actuales — v0.11
 
 ### Sistema de trading
 
@@ -108,16 +108,6 @@ La sección **Entrenamiento** convierte el historial en ejercicios prácticos:
 - biblioteca personal de ejemplos **correctos e incorrectos** por setup.
 
 En el Replay, el mercado real y la ejecución original solo aparecen después de registrar una nueva decisión y lectura.
-
-### Datos y copias de seguridad
-
-- almacenamiento local;
-- imágenes comprimidas;
-- copia completa en JSON;
-- restauración de copias;
-- migración automática de schemas anteriores al **schema v8**;
-- tema claro/oscuro;
-- interfaz en Portugués (Brasil), English y Español.
 
 ## Instalación y uso en Windows
 
