@@ -13,7 +13,7 @@ La herramienta no intenta predecir el mercado. Organiza el proceso de decisión 
 3. **¿Qué haré si se materializa el escenario A, B o C?**
 4. **Después de la sesión, qué hizo el mercado, qué hice yo y cuánto respeté el plan original?**
 
-## Funcionalidades actuales — v0.8
+## Funcionalidades actuales — v0.9
 
 ### Sistema de trading
 
@@ -105,7 +105,11 @@ El proyecto posee una base en **Tauri 2** para distribución en Windows, con:
 - ejecución en instancia única;
 - panel de actualización dentro de la aplicación;
 - infraestructura de actualizaciones firmadas mediante GitHub Releases;
-- instalación de actualizaciones sobre la versión existente sin desinstalación manual.
+- instalación de actualizaciones sobre la versión existente sin desinstalación manual;
+- **SQLite como almacenamiento principal en la aplicación instalada**;
+- migración automática de los datos web en la primera ejecución de escritorio;
+- copias automáticas rotativas, copia manual y carpeta configurable;
+- verificación de integridad y restauración con punto de seguridad.
 
 Detalles de compilación: [`docs/DESKTOP.md`](docs/DESKTOP.md).
 
