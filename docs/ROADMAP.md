@@ -115,7 +115,7 @@
 - [x] Painel de atualização dentro da aplicação.
 - [ ] Primeira Release Windows assinada e teste end-to-end de atualização vA → vB.
 
-  **Status da Release assinada:** código, updater, workflow, versionamento e artefatos estão preparados. A execução final depende da variável `TAURI_UPDATER_PUBLIC_KEY` e dos secrets `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` configurados no GitHub.
+  **Status da Release assinada:** código, updater, workflow, versionamento e artefatos estão preparados. O preflight automatizado confirmou em 15/10/2026 que a variável `TAURI_UPDATER_PUBLIC_KEY` ainda não está configurada no GitHub; o mesmo preflight verifica também `TAURI_SIGNING_PRIVATE_KEY` e, quando aplicável, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` antes de qualquer publicação.
 - [x] CI Windows para validar e gerar instalador.
 - [x] SQLite.
 - [x] Migração do armazenamento web para banco local.
