@@ -80,6 +80,9 @@ pub async fn install_update(app: AppHandle, expected_version: String) -> Result<
         );
     }
 
+    crate::desktop_storage::create_pre_update_backup(&app)
+        .map_err(|error| format!("Não foi possível criar o backup pré-atualização: {error}"))?;
+
     let bytes = update
         .download(|_, _| {}, || {})
         .await
