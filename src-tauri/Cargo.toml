@@ -1,7 +1,7 @@
 [package]
-name = "plano-de-trade"
-version = "0.10.0"
-description = "Plano de Trade desktop application"
+name = "trade-blueprint"
+version = "0.11.0"
+description = "Trade Blueprint desktop application"
 authors = ["Pablo Phillipe Cândido dos Santos"]
 edition = "2021"
 rust-version = "1.90"
