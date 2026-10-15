@@ -1,4 +1,4 @@
-# Trade Plan
+# Trade Blueprint
 
 **Read this in other languages:** [Português](README.md) · [Español](README.es.md)
 
@@ -67,7 +67,7 @@ You can also:
 
 ### Studies
 
-The **Studies** section is separate from Trade Plans and supports analytical exercises that do not need to be tied to a future trade.
+The **Studies** section is separate from Trade Blueprints and supports analytical exercises that do not need to be tied to a future trade.
 
 ### History and patterns
 
@@ -109,32 +109,6 @@ The **Training** section turns historical records into practical exercises:
 
 During Replay, the actual market and original execution remain hidden until the trader records a new decision and reading.
 
-### Desktop application
-
-The project has a **Tauri 2** foundation for Windows distribution, including:
-
-- NSIS installer;
-- single-instance behavior;
-- in-app update panel;
-- signed-update infrastructure using GitHub Releases;
-- updates installed over the existing version without manual uninstall;
-- **SQLite as the primary storage in the installed application**;
-- automatic migration of web data on the first desktop run;
-- rotating automatic backups, manual backup, and configurable folder;
-- integrity check and restore with safety restore point.
-
-Desktop build and release details: [`docs/DESKTOP.md`](docs/DESKTOP.md).
-
-### Data and backup
-
-- local storage;
-- compressed images;
-- complete JSON backup;
-- backup restoration;
-- automatic migration of older schemas to **schema v8**;
-- light/dark theme;
-- Portuguese (Brazil), English, and Spanish interface.
-
 ## Installation and use on Windows
 
 There are two ways to use the project.
@@ -148,11 +122,11 @@ When a Windows installer is available under **Releases**:
 3. select the latest version;
 4. download the Windows setup file, typically named like:
    ```text
-   Plano-de-Trade-0.x.x-Windows-x64-setup.exe
+   Trade-Blueprint-0.x.x-Windows-x64-setup.exe
    ```
 5. double-click the downloaded file;
 6. follow the installer;
-7. open **Plano de Trade** from the Start Menu.
+7. open **Trade Blueprint** from the Start Menu.
 
 Official builds with the updater enabled can check for new versions under **Settings > Desktop app and updates**.
 
@@ -222,15 +196,6 @@ npm run build
 ```
 
 Building the desktop installer requires additional development tools. See [`docs/DESKTOP.md`](docs/DESKTOP.md) only if you intend to develop or package the desktop application.
-
-## Backup
-
-Under **Settings > Backup and recovery**:
-
-- use **Export JSON backup** to save a complete copy;
-- use **Import JSON backup** to restore compatible data.
-
-Older backups are migrated automatically to the current schema.
 
 ## Documentation
 
