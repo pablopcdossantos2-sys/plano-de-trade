@@ -875,6 +875,17 @@ export function translateUi(source: string, language: UiLanguage) {
   const count = source.match(/^(\d+) plano\(s\)$/);
   if (count) return language === "en" ? `${count[1]} plan(s)` : `${count[1]} plan(es)`;
 
+  const historyCount = source.match(/^(\d+) plano\(s\) no recorte • (\d+) revisado\(s\)$/);
+  if (historyCount) return language === "en"
+    ? `${historyCount[1]} plan(s) in selection • ${historyCount[2]} reviewed`
+    : `${historyCount[1]} plan(es) en el recorte • ${historyCount[2]} revisado(s)`;
+
+  const resultCount = source.match(/^(\d+) resultado\(s\)$/);
+  if (resultCount) return language === "en" ? `${resultCount[1]} result(s)` : `${resultCount[1]} resultado(s)`;
+
+  const imageCount = source.match(/^(\d+) imagem\(ns\)$/);
+  if (imageCount) return language === "en" ? `${imageCount[1]} image(s)` : `${imageCount[1]} imagen(es)`;
+
   return source;
 }
 
