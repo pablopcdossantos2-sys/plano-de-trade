@@ -15,7 +15,7 @@ A ferramenta não pretende prever o mercado. Ela organiza o processo decisório 
 3. **O que farei se o cenário A, B ou C se materializar?**
 4. **Depois do pregão, o que o mercado fez, o que eu fiz e quanto respeitei o plano original?**
 
-## Funcionalidades atuais — v0.8
+## Funcionalidades atuais — v0.9
 
 ### Sistema de trade
 
@@ -122,7 +122,11 @@ A arquitetura inclui:
 - execução em instância única;
 - painel de atualização dentro de Configurações;
 - infraestrutura para atualizações assinadas por GitHub Releases;
-- atualização sobre a versão existente, sem exigir desinstalação manual.
+- atualização sobre a versão existente, sem exigir desinstalação manual;
+- **SQLite como armazenamento principal no aplicativo instalado**;
+- migração automática dos dados web na primeira execução desktop;
+- backups automáticos rotativos, backup manual e pasta configurável;
+- verificação de integridade e restauração com ponto de segurança.
 
 Detalhes de compilação e publicação: [`docs/DESKTOP.md`](docs/DESKTOP.md).
 
