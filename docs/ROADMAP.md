@@ -122,10 +122,10 @@
 - [x] Restauração e validação de integridade.
 - [x] Maior capacidade para imagens.
 
-## Fase 7 — Treinamento deliberado
+## Fase 7 — Treinamento deliberado ✅
 
-- [ ] Modo Replay de decisão: ocultar o que aconteceu após o ponto planejado e pedir nova decisão.
-- [ ] Revisitar planos com baixa aderência.
-- [ ] Exercícios baseados nos próprios erros recorrentes do trader.
-- [ ] Comparação “o que pensei naquele momento” × “como interpreto agora”.
-- [ ] Biblioteca pessoal de exemplos corretos e incorretos de cada setup.
+- [x] Modo Replay de decisão: ocultar o que aconteceu após o ponto planejado e pedir nova decisão.
+- [x] Revisitar planos com baixa aderência.
+- [x] Exercícios baseados nos próprios erros recorrentes do trader.
+- [x] Comparação “o que pensei naquele momento” × “como interpreto agora”.
+- [x] Biblioteca pessoal de exemplos corretos e incorretos de cada setup.
