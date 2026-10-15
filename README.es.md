@@ -13,7 +13,7 @@ La herramienta no intenta predecir el mercado. Organiza el proceso de decisión 
 3. **¿Qué haré si se materializa el escenario A, B o C?**
 4. **Después de la sesión, qué hizo el mercado, qué hice yo y cuánto respeté el plan original?**
 
-## Funcionalidades actuales — v0.6
+## Funcionalidades actuales — v0.7
 
 ### Sistema de trading
 
@@ -69,6 +69,21 @@ También es posible:
 
 La sección **Estudios** se mantiene separada de los Planes de Trading y permite análisis que no necesitan estar vinculados a una operación futura.
 
+### Historial y patrones
+
+La sección **Historial** agrega el aprendizaje a lo largo del tiempo:
+
+- calendario de sesiones planificadas y revisadas;
+- filtros por activo, setup, escenario, adherencia y período;
+- adherencia por setup;
+- reglas más violadas;
+- ejecución planificada × parcialmente planificada × improvisada;
+- calidad de la lectura × calidad de la ejecución;
+- búsqueda textual en planes/revisiones, reglas y setups;
+- galería histórica de imágenes.
+
+Las revisiones posteriores incluyen campos estructurados que alimentan estas métricas sin depender solo de interpretación de texto libre.
+
 ### Aplicación de escritorio
 
 El proyecto posee una base en **Tauri 2** para distribución en Windows, con:
@@ -87,7 +102,7 @@ Detalles de compilación: [`docs/DESKTOP.md`](docs/DESKTOP.md).
 - imágenes comprimidas;
 - copia completa en JSON;
 - restauración de copias;
-- migración automática de schemas anteriores al **schema v5**;
+- migración automática de schemas anteriores al **schema v6**;
 - tema claro/oscuro;
 - interfaz en Portugués (Brasil), English y Español.
 
