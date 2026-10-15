@@ -210,6 +210,23 @@ O plano registra uma convicção subjetiva (Baixa, Média ou Alta) apenas para c
 - um plano anterior pode ser duplicado sem carregar revisão, versões congeladas ou estado concluído;
 - cópias recebem novos identificadores de plano, cenários e checklist.
 
+### 3.12 Aprendizado histórico
+
+A seção Histórico transforma revisões individuais em visão longitudinal, sem duplicar os registros de origem.
+
+Recursos:
+
+- calendário mensal de planos por data, distinguindo rascunhos, versões congeladas e revisões concluídas;
+- filtros por ativo, setup, cenário observado, aderência e período;
+- aderência integral por setup;
+- contagem de regras violadas a partir de seleção estruturada na revisão;
+- classificação da execução como Planejada, Parcialmente planejada ou Improvisada;
+- notas de 1 a 5 para qualidade da leitura e qualidade da execução, avaliadas independentemente do P&L;
+- busca textual em planos/revisões, regras e setups;
+- galeria agregada de imagens de planos, revisões, estudos, setups e regras.
+
+A revisão pós-pregão passa a armazenar `executionOrigin`, `violatedRuleIds`, `readingQuality` e `executionQuality`. Dados anteriores são migrados com valores vazios/zero, sem avaliações retroativas inventadas.
+
 ## 4. Persistência e portabilidade
 
 ### Web MVP
@@ -218,7 +235,7 @@ O plano registra uma convicção subjetiva (Baixa, Média ou Alta) apenas para c
 - imagens em Data URL compactadas;
 - backup JSON completo.
 
-### Schema v5
+### Schema v6
 
 Mantém os recursos anteriores e adiciona:
 
@@ -227,12 +244,13 @@ Mantém os recursos anteriores e adiciona:
 - checklist estruturado com `id`, `text` e `checked`;
 - convicção da tese e critério para mudança de opinião;
 - score e pendências de preparação preservados nos novos snapshots;
+- revisão estruturada com origem da execução, regras violadas, qualidade da leitura e qualidade da execução;
 - armazenamento separado entre estudos e planos operacionais;
 - `language` continua suportando `pt-BR`, `en` e `es`;
 - migração automática de dados v1, v2 e v3;
 - estudos incluídos no backup JSON completo.
 
-### Migração v1/v2/v3/v4 → v5
+### Migração v1/v2/v3/v4/v5 → v6
 
 - regras são preservadas;
 - planos são preservados;
@@ -243,6 +261,7 @@ Mantém os recursos anteriores e adiciona:
 - backups v1, v2, v3 e v4 recebem `planTemplates: []`;
 - checklists antigos em texto são migrados para itens estruturados inicialmente não concluídos;
 - backups v4 recebem os novos campos de qualidade da preparação sem inventar scores históricos para snapshots antigos;
+- backups v5 recebem os novos campos históricos da revisão vazios/zero, sem inferir violações, origem ou notas;
 - planos antigos continuam como rascunho, sem snapshots retroativos inventados.
 
 ## 5. Próximas métricas úteis
