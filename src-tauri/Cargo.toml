@@ -1,6 +1,6 @@
 [package]
 name = "plano-de-trade"
-version = "0.7.0"
+version = "0.8.0"
 description = "Plano de Trade desktop application"
 authors = ["Pablo Phillipe Cândido dos Santos"]
 edition = "2021"
