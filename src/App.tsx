@@ -983,6 +983,10 @@ function buildPlanText(p: TradePlan) {
     deviations: "Deviations",
     result: "Result",
     lessons: "Lesson",
+    origin: "Execution origin",
+    readingQuality: "Reading quality",
+    executionQuality: "Execution quality",
+    violatedRules: "Violated rules",
   } : activeLanguage === "es" ? {
     frozen: "VERSIÓN CONGELADA",
     draft: "BORRADOR ACTUAL — SIN VERSIÓN CONGELADA",
@@ -1015,6 +1019,10 @@ function buildPlanText(p: TradePlan) {
     deviations: "Desviaciones",
     result: "Resultado",
     lessons: "Aprendizaje",
+    origin: "Origen de la ejecución",
+    readingQuality: "Calidad de la lectura",
+    executionQuality: "Calidad de la ejecución",
+    violatedRules: "Reglas violadas",
   } : {
     frozen: "VERSÃO CONGELADA",
     draft: "RASCUNHO ATUAL — SEM VERSÃO CONGELADA",
@@ -1047,6 +1055,10 @@ function buildPlanText(p: TradePlan) {
     deviations: "Desvios",
     result: "Resultado",
     lessons: "Aprendizado",
+    origin: "Origem da execução",
+    readingQuality: "Qualidade da leitura",
+    executionQuality: "Qualidade da execução",
+    violatedRules: "Regras violadas",
   };
 
   const source = reference ? `${labels.frozen} v${reference.version} — ${fmtDateTime(reference.frozenAt)}` : labels.draft;
@@ -1055,9 +1067,11 @@ function buildPlanText(p: TradePlan) {
   const localizedObserved = translateUi(p.review.observedScenario, activeLanguage);
   const localizedFollowed = translateUi(p.review.followedPlan, activeLanguage);
   const localizedConviction = base.thesisConviction ? translateUi(base.thesisConviction, activeLanguage) : "—";
+  const localizedOrigin = translateUi(p.review.executionOrigin, activeLanguage);
   const checklist = base.checklist.map((item) => `${item.checked ? "[x]" : "[ ]"} ${item.text}`).join("\n");
+  const violatedRules = p.review.violatedRuleIds.map((id) => translateUi(id, activeLanguage)).join(", ");
 
-  return `${labels.title} — ${base.asset} — ${fmtDate(base.tradingDate)}\n${source}\n\n${labels.bias}: ${localizedBias}\n${labels.conviction}: ${localizedConviction}\n${labels.changeMind}: ${base.changeMindCondition}\n${labels.preparation}: ${base.readinessScore === undefined ? planReadiness(p).score : base.readinessScore}%\n${labels.maxRisk}: ${base.maxRisk}\n${labels.maxTrades}: ${base.maxTrades}\n\n${labels.context}\n${base.marketContext}\n\n${labels.levels}\n${base.keyLevels}\n\n${labels.events}\n${base.macroEvents}\n\n${labels.counter}\n${base.evidenceAgainstThesis}\n\n${labels.noTrade}\n${base.noTradeConditions}\n\n${labels.checklist}\n${checklist}\n\n${scenarios}\n\n${labels.behavior}\n${base.behaviorPlan}\n\n${labels.market}\n${p.review.happened}\n\n${labels.execution}\n${p.review.executionSummary}\n\n${labels.observed}: ${localizedObserved}\n${labels.followed}: ${localizedFollowed}\n${labels.deviations}: ${p.review.deviations}\n${labels.result}: ${p.review.result}\n${labels.lessons}: ${p.review.lessons}\n`;
+  return `${labels.title} — ${base.asset} — ${fmtDate(base.tradingDate)}\n${source}\n\n${labels.bias}: ${localizedBias}\n${labels.conviction}: ${localizedConviction}\n${labels.changeMind}: ${base.changeMindCondition}\n${labels.preparation}: ${base.readinessScore === undefined ? planReadiness(p).score : base.readinessScore}%\n${labels.maxRisk}: ${base.maxRisk}\n${labels.maxTrades}: ${base.maxTrades}\n\n${labels.context}\n${base.marketContext}\n\n${labels.levels}\n${base.keyLevels}\n\n${labels.events}\n${base.macroEvents}\n\n${labels.counter}\n${base.evidenceAgainstThesis}\n\n${labels.noTrade}\n${base.noTradeConditions}\n\n${labels.checklist}\n${checklist}\n\n${scenarios}\n\n${labels.behavior}\n${base.behaviorPlan}\n\n${labels.market}\n${p.review.happened}\n\n${labels.execution}\n${p.review.executionSummary}\n\n${labels.observed}: ${localizedObserved}\n${labels.followed}: ${localizedFollowed}\n${labels.origin}: ${localizedOrigin || "—"}\n${labels.readingQuality}: ${p.review.readingQuality || "—"}/5\n${labels.executionQuality}: ${p.review.executionQuality || "—"}/5\n${labels.violatedRules}: ${violatedRules || "—"}\n${labels.deviations}: ${p.review.deviations}\n${labels.result}: ${p.review.result}\n${labels.lessons}: ${p.review.lessons}\n`;
 }
 
 
@@ -1348,7 +1362,7 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
             {desktopUpdateStatus && <div className="notice">{desktopUpdateStatus}</div>}
           </> : <p className="muted-text">Você está usando a versão web. O instalador Windows baseado em Tauri possui atualização automática integrada.</p>}
         </div>
-        <h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v5 inclui planos, estudos, templates, biblioteca de setups, histórico de versões congeladas e preferência de idioma.</p>
+        <h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v6 inclui planos, estudos, templates, histórico estruturado de revisões, biblioteca de setups, versões congeladas e preferência de idioma.</p>
         <div className="stack-actions"><button className="primary" onClick={() => exportBackup(state)}>Exportar backup JSON</button><button onClick={() => fileRef.current?.click()}>Importar backup JSON</button><input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => void importFile(e.target.files?.[0])} /></div>
         {message && <div className="notice">{message}</div>}
         <div className="danger-zone"><h3>Zona de risco</h3><p>Apaga todos os dados deste navegador. Exporte um backup antes, se necessário.</p><button className="danger" onClick={() => { if (confirm(translateUi("Apagar todos os dados locais? Esta ação não pode ser desfeita.", activeLanguage))) { localStorage.removeItem(STORAGE_KEY); const fresh = initialState(); setState(fresh); setAssetsText(fresh.settings.assets.join(", ")); } }}>Apagar todos os dados</button></div>
