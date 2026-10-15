@@ -13,7 +13,7 @@ The tool is not designed to predict the market. It organizes the trader's decisi
 3. **What will I do if scenario A, B, or C materializes?**
 4. **After the session, what did the market do, what did I do, and how closely did I follow the original plan?**
 
-## Current features — v0.10
+## Current features — v0.11
 
 ### Trading system
 
@@ -67,7 +67,7 @@ You can also:
 
 ### Studies
 
-The **Studies** section is separate from Trade Blueprints and supports analytical exercises that do not need to be tied to a future trade.
+The **Studies** section is separate from trade plans and supports analytical exercises that do not need to be tied to a future trade.
 
 ### History and patterns
 
