@@ -35,5 +35,5 @@ pub fn run() {
             updates::install_update,
         ])
         .run(tauri::generate_context!())
-        .expect("erro fatal ao iniciar o Plano de Trade");
+        .expect("erro fatal ao iniciar o Trade Blueprint");
 }
