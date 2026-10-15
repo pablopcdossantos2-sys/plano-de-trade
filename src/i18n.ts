@@ -69,7 +69,7 @@ const en: Record<string, string> = {
   "Ex.: Eu esperaria confirmação; não anteciparia o rompimento; reduziria risco em volatilidade anormal…": "E.g.: I would wait for confirmation; I would not anticipate the breakout; I would reduce risk in abnormal volatility…",
   "O que a análise mostrou? A hipótese inicial se sustentou? Em quais condições?": "What did the analysis show? Did the initial hypothesis hold? Under what conditions?",
   "O que deve ser praticado, investigado novamente ou transformado em regra/setup?": "What should be practiced, investigated again, or turned into a rule/setup?",
-  "O schema v4 inclui planos, estudos, biblioteca de setups, histórico de versões congeladas e preferência de idioma.": "Schema v4 includes plans, studies, the setup library, frozen-version history, and language preference."
+  "O schema v4 inclui planos, estudos, biblioteca de setups, histórico de versões congeladas e preferência de idioma.": "Schema v4 includes plans, studies, the setup library, frozen-version history, and language preference.",
   "PREPARAÇÃO ANTES DA EXECUÇÃO": "PREPARATION BEFORE EXECUTION",
   "Transforme hipóteses em decisões previamente pensadas.": "Turn hypotheses into pre-planned decisions.",
   "Planeje o pregão antes da abertura, confronte sua própria tese, congele a preparação e compare depois o mercado real com aquilo que você havia decidido fazer.": "Plan the trading session before the open, challenge your own thesis, freeze the preparation, and later compare the real market with what you had decided to do.",
@@ -378,7 +378,7 @@ const es: Record<string, string> = {
   "Ex.: Eu esperaria confirmação; não anteciparia o rompimento; reduziria risco em volatilidade anormal…": "Ej.: Esperaría confirmación; no anticiparía la ruptura; reduciría el riesgo con volatilidad anormal…",
   "O que a análise mostrou? A hipótese inicial se sustentou? Em quais condições?": "¿Qué mostró el análisis? ¿Se sostuvo la hipótesis inicial? ¿En qué condiciones?",
   "O que deve ser praticado, investigado novamente ou transformado em regra/setup?": "¿Qué debe practicarse, investigarse nuevamente o convertirse en regla/setup?",
-  "O schema v4 inclui planos, estudos, biblioteca de setups, histórico de versões congeladas e preferência de idioma.": "El schema v4 incluye planes, estudios, biblioteca de setups, historial de versiones congeladas y preferencia de idioma."
+  "O schema v4 inclui planos, estudos, biblioteca de setups, histórico de versões congeladas e preferência de idioma.": "El schema v4 incluye planes, estudios, biblioteca de setups, historial de versiones congeladas y preferencia de idioma.",
   "PREPARAÇÃO ANTES DA EXECUÇÃO": "PREPARACIÓN ANTES DE LA EJECUCIÓN",
   "Transforme hipóteses em decisões previamente pensadas.": "Convierte hipótesis en decisiones pensadas de antemano.",
   "Planeje o pregão antes da abertura, confronte sua própria tese, congele a preparação e compare depois o mercado real com aquilo que você havia decidido fazer.": "Planifica la sesión antes de la apertura, cuestiona tu propia tesis, congela la preparación y luego compara el mercado real con lo que habías decidido hacer.",
