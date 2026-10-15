@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Plano de Trade",
-  "version": "0.10.0",
+  "productName": "Trade Blueprint",
+  "version": "0.11.0",
   "identifier": "com.pablopcsantos.planodetrade",
   "build": {
     "beforeDevCommand": "npm run dev -- --host 127.0.0.1 --port 5173 --strictPort",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Plano de Trade",
+        "title": "Trade Blueprint",
         "width": 1280,
         "height": 820,
         "minWidth": 960,
@@ -46,7 +46,7 @@
           "Spanish"
         ],
         "displayLanguageSelector": true,
-        "startMenuFolder": "Plano de Trade"
+        "startMenuFolder": "Trade Blueprint"
       }
     }
   }
