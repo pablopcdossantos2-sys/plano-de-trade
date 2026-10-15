@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AppState } from "./types";
 
-export const CURRENT_SCHEMA_VERSION = 6;
+export const CURRENT_SCHEMA_VERSION = 7;
 // Mantemos a mesma chave para preservar os dados criados desde o MVP inicial.
 export const STORAGE_KEY = "plano-de-trade-data-v1";
 
@@ -226,8 +226,37 @@ const planV5Schema = z.object({
 });
 
 
+const planV6Schema = z.object({
+  id: z.string(),
+  planDate: z.string(),
+  tradingDate: z.string(),
+  asset: z.string(),
+  bias: z.enum(["Alta", "Baixa", "Neutro"]),
+  setupId: z.string().optional(),
+  marketContext: z.string(),
+  keyLevels: z.string(),
+  macroEvents: z.string(),
+  evidenceAgainstThesis: z.string(),
+  maxRisk: z.string(),
+  maxTrades: z.number().int().min(1),
+  noTradeConditions: z.string(),
+  checklist: z.array(checklistItemSchema),
+  scenarios: z.array(scenarioSchema),
+  behaviorPlan: z.string(),
+  thesisConviction: thesisConvictionSchema,
+  changeMindCondition: z.string(),
+  attachments: z.array(attachmentSchema),
+  planStatus: z.enum(["draft", "frozen"]),
+  versions: z.array(snapshotSchema),
+  review: reviewSchema,
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+
 const planSchema = z.object({
   id: z.string(),
+  sessionId: z.string(),
   planDate: z.string(),
   tradingDate: z.string(),
   asset: z.string(),
@@ -273,6 +302,26 @@ const planTemplateSchema = z.object({
   behaviorPlan: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
+});
+
+const journalTradeSchema = z.object({
+  id: z.string(),
+  externalId: z.string(),
+  tradingDate: z.string(),
+  asset: z.string(),
+  side: z.string(),
+  entryTime: z.string(),
+  exitTime: z.string(),
+  entryPrice: z.string(),
+  exitPrice: z.string(),
+  quantity: z.string(),
+  result: z.string(),
+  notes: z.string(),
+  planId: z.string().optional(),
+  sessionId: z.string().optional(),
+  scenarioLabel: z.enum(["", "A", "B", "C"]),
+  importSource: z.string(),
+  importedAt: z.string(),
 });
 
 const studySchema = z.object({
@@ -339,12 +388,24 @@ const stateV5Schema = z.object({
   updatedAt: z.string(),
 });
 
+const stateV6Schema = z.object({
+  schemaVersion: z.literal(6),
+  rules: z.array(ruleSchema),
+  setups: z.array(setupSchema),
+  plans: z.array(planV6Schema),
+  planTemplates: z.array(planTemplateSchema),
+  studies: z.array(studySchema),
+  settings: settingsSchema,
+  updatedAt: z.string(),
+});
+
 const stateSchema = z.object({
   schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
   rules: z.array(ruleSchema),
   setups: z.array(setupSchema),
   plans: z.array(planSchema),
   planTemplates: z.array(planTemplateSchema),
+  journalTrades: z.array(journalTradeSchema),
   studies: z.array(studySchema),
   settings: settingsSchema,
   updatedAt: z.string(),
@@ -372,6 +433,7 @@ function migrateSnapshotV4(snapshot: z.infer<typeof snapshotV4Schema>) {
 function migratePlanV4(plan: z.infer<typeof planV4Schema>) {
   return {
     ...plan,
+    sessionId: crypto.randomUUID(),
     checklist: migratedChecklist(plan.checklist),
     thesisConviction: "" as const,
     changeMindCondition: "",
@@ -407,7 +469,15 @@ function migrateReviewV5(review: z.infer<typeof reviewV5Schema>) {
 function migratePlanV5(plan: z.infer<typeof planV5Schema>) {
   return {
     ...plan,
+    sessionId: crypto.randomUUID(),
     review: migrateReviewV5(plan.review),
+  };
+}
+
+function migratePlanV6(plan: z.infer<typeof planV6Schema>) {
+  return {
+    ...plan,
+    sessionId: crypto.randomUUID(),
   };
 }
 
@@ -418,6 +488,7 @@ export function initialState(): AppState {
     setups: [],
     plans: [],
     planTemplates: [],
+    journalTrades: [],
     studies: [],
     settings: {
       traderName: "",
@@ -447,6 +518,21 @@ function migrateState(data: unknown): AppState {
     return current.data;
   }
 
+  if (versionResult.data.schemaVersion === 6) {
+    const legacy = stateV6Schema.safeParse(data);
+    if (!legacy.success) {
+      const issue = legacy.error.issues[0];
+      throw new Error(`Backup v6 inválido em ${issue.path.join(".") || "arquivo"}: ${issue.message}`);
+    }
+    return {
+      ...legacy.data,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      plans: legacy.data.plans.map(migratePlanV6),
+      journalTrades: [],
+      updatedAt: now(),
+    };
+  }
+
   if (versionResult.data.schemaVersion === 5) {
     const legacy = stateV5Schema.safeParse(data);
     if (!legacy.success) {
@@ -457,6 +543,7 @@ function migrateState(data: unknown): AppState {
       ...legacy.data,
       schemaVersion: CURRENT_SCHEMA_VERSION,
       plans: legacy.data.plans.map(migratePlanV5),
+      journalTrades: [],
       updatedAt: now(),
     };
   }
@@ -472,6 +559,7 @@ function migrateState(data: unknown): AppState {
       schemaVersion: CURRENT_SCHEMA_VERSION,
       plans: legacy.data.plans.map(migratePlanV4),
       planTemplates: [],
+      journalTrades: [],
       updatedAt: now(),
     };
   }
@@ -487,6 +575,7 @@ function migrateState(data: unknown): AppState {
       schemaVersion: CURRENT_SCHEMA_VERSION,
       plans: legacy.data.plans.map(migratePlanV4),
       planTemplates: [],
+      journalTrades: [],
       studies: [],
       updatedAt: now(),
     };
@@ -503,6 +592,7 @@ function migrateState(data: unknown): AppState {
       schemaVersion: CURRENT_SCHEMA_VERSION,
       plans: legacy.data.plans.map(migratePlanV4),
       planTemplates: [],
+      journalTrades: [],
       studies: [],
       settings: { ...legacy.data.settings, language: "pt-BR" },
       updatedAt: now(),
@@ -521,6 +611,7 @@ function migrateState(data: unknown): AppState {
       setups: [],
       plans: legacy.data.plans.map((plan) => migratePlanV4(migrateV1PlanToV4(plan))),
       planTemplates: [],
+      journalTrades: [],
       studies: [],
       settings: { ...legacy.data.settings, language: "pt-BR" },
       updatedAt: now(),
