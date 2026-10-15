@@ -13,7 +13,7 @@ La herramienta no intenta predecir el mercado. Organiza el proceso de decisión 
 3. **¿Qué haré si se materializa el escenario A, B o C?**
 4. **Después de la sesión, qué hizo el mercado, qué hice yo y cuánto respeté el plan original?**
 
-## Funcionalidades actuales — v0.7
+## Funcionalidades actuales — v0.8
 
 ### Sistema de trading
 
@@ -84,6 +84,19 @@ La sección **Historial** agrega el aprendizaje a lo largo del tiempo:
 
 Las revisiones posteriores incluyen campos estructurados que alimentan estas métricas sin depender solo de interpretación de texto libre.
 
+### Integración con diario de trades
+
+En **Historial** se pueden importar ejecuciones en **JSON o CSV** y vincularlas a los planes.
+
+- vínculo automático por fecha + activo cuando existe un único plan compatible;
+- vínculo manual a plan y escenario A/B/C;
+- importación de horarios, precios, cantidad, dirección y resultado;
+- relleno no destructivo de la revisión cuando sea posible;
+- detección de trades sin plan o sin escenario preplanificado;
+- informe **Planifiqué × operé × registré**.
+
+Formato y ejemplos: [`docs/JOURNAL-INTEGRATION.md`](docs/JOURNAL-INTEGRATION.md).
+
 ### Aplicación de escritorio
 
 El proyecto posee una base en **Tauri 2** para distribución en Windows, con:
@@ -102,7 +115,7 @@ Detalles de compilación: [`docs/DESKTOP.md`](docs/DESKTOP.md).
 - imágenes comprimidas;
 - copia completa en JSON;
 - restauración de copias;
-- migración automática de schemas anteriores al **schema v6**;
+- migración automática de schemas anteriores al **schema v7**;
 - tema claro/oscuro;
 - interfaz en Portugués (Brasil), English y Español.
 
