@@ -13,7 +13,7 @@ The tool is not designed to predict the market. It organizes the trader's decisi
 3. **What will I do if scenario A, B, or C materializes?**
 4. **After the session, what did the market do, what did I do, and how closely did I follow the original plan?**
 
-## Current features — v0.8
+## Current features — v0.9
 
 ### Trading system
 
@@ -105,7 +105,11 @@ The project has a **Tauri 2** foundation for Windows distribution, including:
 - single-instance behavior;
 - in-app update panel;
 - signed-update infrastructure using GitHub Releases;
-- updates installed over the existing version without manual uninstall.
+- updates installed over the existing version without manual uninstall;
+- **SQLite as the primary storage in the installed application**;
+- automatic migration of web data on the first desktop run;
+- rotating automatic backups, manual backup, and configurable folder;
+- integrity check and restore with safety restore point.
 
 Desktop build and release details: [`docs/DESKTOP.md`](docs/DESKTOP.md).
 
