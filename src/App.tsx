@@ -1980,12 +1980,12 @@ export default function App() {
 
   return <div className="app-shell">
     <aside>
-      <div className="brand"><div className="brand-mark">PT</div><div><strong>Plano de Trade</strong><span>preparar • congelar • executar • revisar</span></div></div>
+      <div className="brand"><div className="brand-mark">TB</div><div><strong>Trade Blueprint</strong><span>preparar • congelar • executar • revisar</span></div></div>
       <nav>{nav.map(([id, label, icon]) => <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)}><span>{icon}</span>{label}</button>)}</nav>
       <div className="sidebar-foot"><span>Dados locais</span><b>schema v{state.schemaVersion}</b></div>
     </aside>
     <main>
-      <header><div><span className="mobile-title">Plano de Trade</span></div><div className="save-state"><span className={saveError ? "bad" : "good"}></span>{saveError || "Salvamento local automático"}</div></header>
+      <header><div><span className="mobile-title">Trade Blueprint</span></div><div className="save-state"><span className={saveError ? "bad" : "good"}></span>{saveError || "Salvamento local automático"}</div></header>
       {tab === "dashboard" && <Dashboard state={state} onOpenPlans={() => setTab("plans")} onOpenSetups={() => setTab("setups")} />}
       {tab === "rules" && <RulesPage state={state} setState={setState} />}
       {tab === "setups" && <SetupsPage state={state} setState={setState} />}
