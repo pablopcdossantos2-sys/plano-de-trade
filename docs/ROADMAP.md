@@ -1,4 +1,4 @@
-# Roadmap — Plano de Trade
+# Roadmap — Trade Blueprint
 
 ## Fase 1 — MVP de planejamento ✅
 
@@ -114,6 +114,8 @@
 - [x] Infraestrutura de updater assinado via GitHub Releases públicas.
 - [x] Painel de atualização dentro da aplicação.
 - [ ] Primeira Release Windows assinada e teste end-to-end de atualização vA → vB.
+
+  **Status da Release assinada:** código, updater, workflow, versionamento e artefatos estão preparados. A execução final depende da variável `TAURI_UPDATER_PUBLIC_KEY` e dos secrets `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` configurados no GitHub.
 - [x] CI Windows para validar e gerar instalador.
 - [x] SQLite.
 - [x] Migração do armazenamento web para banco local.
