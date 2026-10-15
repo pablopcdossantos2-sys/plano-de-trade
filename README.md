@@ -1,10 +1,9 @@
-# Plano de Trade
+# Trade Blueprint
 
 **Leia em outros idiomas:** [English](README.en.md) · [Español](README.es.md)
 
 Aplicação local para preparar o trader antes do pregão, organizar estudos analíticos e comparar, depois do mercado, aquilo que foi planejado com aquilo que efetivamente aconteceu.
 
-> Nome de trabalho do projeto. Sugestões de nome definitivo: **Mapa de Trade**, **Plano de Pregão** e **Trade Blueprint**.
 
 ## Objetivo
 
@@ -124,34 +123,6 @@ A seção **Treinamento** transforma o histórico em exercícios práticos:
 
 No Replay, o mercado real e a execução original só aparecem depois que o trader registra sua nova decisão e leitura.
 
-### Aplicativo desktop
-
-O projeto possui base em **Tauri 2** para distribuição como aplicativo Windows.
-
-A arquitetura inclui:
-
-- instalador Windows NSIS;
-- execução em instância única;
-- painel de atualização dentro de Configurações;
-- infraestrutura para atualizações assinadas por GitHub Releases;
-- atualização sobre a versão existente, sem exigir desinstalação manual;
-- **SQLite como armazenamento principal no aplicativo instalado**;
-- migração automática dos dados web na primeira execução desktop;
-- backups automáticos rotativos, backup manual e pasta configurável;
-- verificação de integridade e restauração com ponto de segurança.
-
-Detalhes de compilação e publicação: [`docs/DESKTOP.md`](docs/DESKTOP.md).
-
-### Dados e backup
-
-- armazenamento local;
-- imagens compactadas;
-- backup completo em JSON;
-- restauração de backups;
-- migração automática de schemas antigos para o **schema v8**;
-- tema claro/escuro;
-- interface em Português (Brasil), English e Español.
-
 ## Instalação e execução no Windows
 
 Há duas formas de usar o projeto.
@@ -165,11 +136,11 @@ Quando houver uma versão publicada na área **Releases** do GitHub:
 3. Abra a versão mais recente.
 4. Baixe o arquivo de instalação do Windows, normalmente com nome semelhante a:
    ```text
-   Plano-de-Trade-0.x.x-Windows-x64-setup.exe
+   Trade-Blueprint-0.x.x-Windows-x64-setup.exe
    ```
 5. Dê dois cliques no arquivo baixado.
 6. Siga as telas do instalador.
-7. Depois da instalação, abra **Plano de Trade** pelo Menu Iniciar.
+7. Depois da instalação, abra **Trade Blueprint** pelo Menu Iniciar.
 
 As versões oficiais com updater habilitado poderão procurar novas versões em **Configurações > Aplicativo desktop e atualizações**.
 
@@ -264,15 +235,6 @@ npm run build
 ```
 
 A compilação e geração do instalador desktop exigem ferramentas adicionais. Consulte [`docs/DESKTOP.md`](docs/DESKTOP.md) somente se você pretende desenvolver ou empacotar o aplicativo.
-
-## Backup
-
-Em **Configurações > Backup e recuperação**:
-
-- use **Exportar backup JSON** para salvar uma cópia completa;
-- use **Importar backup JSON** para restaurar dados compatíveis.
-
-Backups dos schemas anteriores são migrados automaticamente para o schema atual. O sistema não cria retroativamente versões congeladas que nunca existiram.
 
 ## Documentação
 
