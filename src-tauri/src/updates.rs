@@ -16,7 +16,7 @@ fn updater_flag_enabled(value: Option<&str>) -> bool {
 }
 
 pub fn plugin_enabled() -> bool {
-    updater_flag_enabled(option_env!("PLANO_UPDATER_ENABLED"))
+    updater_flag_enabled(option_env!("TRADE_BLUEPRINT_UPDATER_ENABLED"))
 }
 
 #[tauri::command]
