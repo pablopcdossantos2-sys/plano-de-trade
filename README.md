@@ -15,7 +15,7 @@ A ferramenta não pretende prever o mercado. Ela organiza o processo decisório 
 3. **O que farei se o cenário A, B ou C se materializar?**
 4. **Depois do pregão, o que o mercado fez, o que eu fiz e quanto respeitei o plano original?**
 
-## Funcionalidades atuais — v0.7
+## Funcionalidades atuais — v0.8
 
 ### Sistema de trade
 
@@ -99,6 +99,19 @@ A seção **Histórico** reúne o aprendizado acumulado:
 
 As revisões pós-pregão possuem campos estruturados para alimentar essas métricas sem depender apenas de interpretação de texto livre.
 
+### Integração com diário de trades
+
+Na seção **Histórico**, é possível importar execuções em **JSON ou CSV** e relacioná-las aos planos.
+
+- vínculo automático por data + ativo quando há um único plano compatível;
+- vínculo manual a plano e cenário A/B/C;
+- importação de horários, preços, quantidade, direção e resultado;
+- preenchimento não destrutivo da revisão quando possível;
+- detecção de trades sem plano ou sem cenário previamente definido;
+- relatório **Planejei × operei × registrei**.
+
+Formato e exemplos: [`docs/JOURNAL-INTEGRATION.md`](docs/JOURNAL-INTEGRATION.md).
+
 ### Aplicativo desktop
 
 O projeto possui base em **Tauri 2** para distribuição como aplicativo Windows.
@@ -119,7 +132,7 @@ Detalhes de compilação e publicação: [`docs/DESKTOP.md`](docs/DESKTOP.md).
 - imagens compactadas;
 - backup completo em JSON;
 - restauração de backups;
-- migração automática de schemas antigos para o **schema v6**;
+- migração automática de schemas antigos para o **schema v7**;
 - tema claro/escuro;
 - interface em Português (Brasil), English e Español.
 
