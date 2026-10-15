@@ -111,8 +111,9 @@
 - [x] Tauri 2.
 - [x] Instalador Windows NSIS.
 - [x] Instância única.
-- [x] Atualizador assinado via GitHub Releases públicas.
+- [x] Infraestrutura de updater assinado via GitHub Releases públicas.
 - [x] Painel de atualização dentro da aplicação.
+- [ ] Primeira Release Windows assinada e teste end-to-end de atualização vA → vB.
 - [x] CI Windows para validar e gerar instalador.
 - [ ] SQLite.
 - [ ] Migração do armazenamento web para banco local.
