@@ -115,12 +115,12 @@
 - [x] Painel de atualização dentro da aplicação.
 - [ ] Primeira Release Windows assinada e teste end-to-end de atualização vA → vB.
 - [x] CI Windows para validar e gerar instalador.
-- [ ] SQLite.
-- [ ] Migração do armazenamento web para banco local.
-- [ ] Backups automáticos rotativos.
-- [ ] Pasta configurável de backup.
-- [ ] Restauração e validação de integridade.
-- [ ] Maior capacidade para imagens.
+- [x] SQLite.
+- [x] Migração do armazenamento web para banco local.
+- [x] Backups automáticos rotativos.
+- [x] Pasta configurável de backup.
+- [x] Restauração e validação de integridade.
+- [x] Maior capacidade para imagens.
 
 ## Fase 7 — Treinamento deliberado
 
