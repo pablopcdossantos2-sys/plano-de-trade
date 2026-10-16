@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { prepareImage } from "./images";
-import { normalizedTradeDate, parseDelimitedRows } from "./journalImport";
+import { normalizedTradeDate, parseJournalRows } from "./journalImport";
 import { clearStorageLoadGuard, exportBackup, initialState, loadStateResult, parseBackup, saveState, serializeState, STORAGE_KEY } from "./storage";
 import { localeForLanguage, translateUi, useInterfaceLanguage, type UiLanguage } from "./i18n";
 import {
@@ -1241,22 +1241,9 @@ function journalTradeFromRow(row: Record<string, unknown>, source: string, state
 }
 
 function parseJournalImport(text: string, source: string, state: AppState) {
-  let rows: Array<Record<string, unknown>> = [];
-  const trimmed = text.trim();
-  if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
-    const parsed = JSON.parse(trimmed) as unknown;
-    const rawRows = Array.isArray(parsed)
-      ? parsed
-      : parsed && typeof parsed === "object" && Array.isArray((parsed as { trades?: unknown[] }).trades)
-        ? (parsed as { trades: unknown[] }).trades
-        : parsed && typeof parsed === "object" && Array.isArray((parsed as { data?: unknown[] }).data)
-          ? (parsed as { data: unknown[] }).data
-          : [];
-    rows = rawRows.filter((item): item is Record<string, unknown> => !!item && typeof item === "object" && !Array.isArray(item));
-  } else {
-    rows = parseDelimitedRows(text);
-  }
-  return rows.map((row) => journalTradeFromRow(row, source, state)).filter((trade): trade is JournalTrade => !!trade);
+  return parseJournalRows(text)
+    .map((row) => journalTradeFromRow(row, source, state))
+    .filter((trade): trade is JournalTrade => !!trade);
 }
 
 function journalTradeKey(trade: JournalTrade) {
