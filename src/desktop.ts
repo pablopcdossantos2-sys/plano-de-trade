@@ -7,6 +7,11 @@ export type DesktopUpdateInfo = {
   date?: string | null;
 };
 
+export type DesktopSaveResult = {
+  saved: boolean;
+  backupWarning?: string | null;
+};
+
 export type DesktopIntegrityInfo = {
   ok: boolean;
   message: string;
@@ -38,9 +43,9 @@ export async function loadDesktopState() {
   return invoke<string | null>("load_desktop_state");
 }
 
-export async function saveDesktopState(stateJson: string) {
-  if (!isDesktopApp()) return false;
-  return invoke<boolean>("save_desktop_state", { stateJson });
+export async function saveDesktopState(stateJson: string, localDay: string) {
+  if (!isDesktopApp()) return null;
+  return invoke<DesktopSaveResult>("save_desktop_state", { stateJson, localDay });
 }
 
 export async function getDesktopBackupDirectory() {
@@ -56,6 +61,11 @@ export async function setDesktopBackupDirectory(path: string) {
 export async function createDesktopBackup() {
   if (!isDesktopApp()) return null;
   return invoke<string>("create_desktop_backup");
+}
+
+export async function previewDesktopBackup(path: string) {
+  if (!isDesktopApp()) return null;
+  return invoke<string>("preview_desktop_backup", { path });
 }
 
 export async function restoreDesktopBackup(path: string) {
