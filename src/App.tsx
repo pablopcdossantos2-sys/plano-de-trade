@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { prepareImage } from "./images";
-import { exportBackup, initialState, loadState, parseBackup, saveState, STORAGE_KEY } from "./storage";
+import { clearStorageLoadGuard, exportBackup, initialState, loadStateResult, parseBackup, saveState, STORAGE_KEY } from "./storage";
 import { localeForLanguage, translateUi, useInterfaceLanguage, type UiLanguage } from "./i18n";
 import {
   checkDesktopIntegrity,
@@ -13,6 +13,7 @@ import {
   installDesktopUpdate,
   isDesktopApp,
   loadDesktopState,
+  previewDesktopBackup,
   restoreDesktopBackup,
   saveDesktopState,
   setDesktopBackupDirectory,
@@ -62,7 +63,9 @@ function isoDateLocal(date = new Date()) {
 
 function tomorrow() {
   const date = new Date();
-  date.setDate(date.getDate() + 1);
+  do {
+    date.setDate(date.getDate() + 1);
+  } while (date.getDay() === 0 || date.getDay() === 6);
   return isoDateLocal(date);
 }
 
@@ -289,8 +292,10 @@ function downloadText(filename: string, text: string) {
   const a = document.createElement("a");
   a.href = href;
   a.download = filename;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(href);
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(href), 1_000);
 }
 
 function snapshotFromPlan(plan: TradePlan, version: number): PlanSnapshot {
@@ -371,8 +376,9 @@ function Dashboard({ state, onOpenPlans, onOpenSetups }: { state: AppState; onOp
     () => [...state.plans].filter((p) => p.tradingDate >= isoDateLocal()).sort((a, b) => a.tradingDate.localeCompare(b.tradingDate)).slice(0, 6),
     [state.plans],
   );
-  const reviewed = state.plans.filter((p) => !!p.review.reviewedAt).length;
-  const followed = state.plans.filter((p) => p.review.followedPlan === "Sim").length;
+  const reviewedPlans = state.plans.filter((p) => !!p.review.reviewedAt);
+  const reviewed = reviewedPlans.length;
+  const followed = reviewedPlans.filter((p) => p.review.followedPlan === "Sim").length;
   const frozen = state.plans.filter((p) => p.planStatus === "frozen").length;
 
   return <section className="page">
@@ -444,7 +450,7 @@ function RulesPage({ state, setState }: { state: AppState; setState: React.Dispa
         <Field label="Por que esta regra existe?" hint="Registrar a justificativa ajuda a obedecer a regra quando houver pressão."><textarea rows={4} value={draft.rationale} onChange={(e) => setDraft({ ...draft, rationale: e.target.value })} placeholder="Que problema, erro recorrente ou princípio técnico esta regra protege?" /></Field>
       </div>
       <label className="check"><input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} /> Regra ativa</label>
-      <AttachmentField value={draft.attachments} onChange={(attachments) => setDraft({ ...draft, attachments })} title="Imagens explicativas da regra" />
+      <AttachmentField value={draft.attachments} onChange={(attachments) => setDraft((current) => ({ ...current, attachments }))} title="Imagens explicativas da regra" />
       <div className="actions"><button className="primary" onClick={save}>{editing ? "Salvar alterações" : "Adicionar regra"}</button>{editing && <button onClick={() => { setEditing(null); setDraft(blank()); }}>Cancelar</button>}</div>
     </div>
     <div className="cards">{state.rules.map((rule) => <article className={`rule-card ${!rule.active ? "muted" : ""}`} key={rule.id}>
@@ -452,7 +458,18 @@ function RulesPage({ state, setState }: { state: AppState; setState: React.Dispa
       <h3>{rule.title}</h3><p>{rule.description}</p>
       {rule.rationale && <div className="why"><b>Por quê:</b> {rule.rationale}</div>}
       {!!rule.attachments.length && <div className="mini-images">{rule.attachments.slice(0, 3).map((img) => <img key={img.id} src={img.dataUrl} alt={img.name} />)}</div>}
-      <div className="card-actions"><button onClick={() => edit(rule)}>Editar</button><button className="danger" onClick={() => setState((s) => ({ ...s, rules: s.rules.filter((r) => r.id !== rule.id) }))}>Remover</button></div>
+      <div className="card-actions"><button onClick={() => edit(rule)}>Editar</button><button className="danger" onClick={() => {
+        if (!confirm(translateUi("Remover esta regra?", activeLanguage))) return;
+        setState((current) => ({
+          ...current,
+          rules: current.rules.filter((item) => item.id !== rule.id),
+          plans: current.plans.map((plan) => ({
+            ...plan,
+            review: { ...plan.review, violatedRuleIds: plan.review.violatedRuleIds.filter((id) => id !== rule.id) },
+          })),
+          trainingRecords: current.trainingRecords.map((record) => record.ruleId === rule.id ? { ...record, ruleId: undefined } : record),
+        }));
+      }}>Remover</button></div>
     </article>)}</div>
     {!state.rules.length && <div className="empty">Você ainda não cadastrou regras. Comece pelas regras de risco e pelas situações em que não deve operar.</div>}
   </section>;
@@ -500,7 +517,7 @@ function SetupsPage({ state, setState }: { state: AppState; setState: React.Disp
         <Field label="Cuidados comportamentais"><textarea rows={3} value={draft.behaviorNotes} onChange={(e) => setDraft({ ...draft, behaviorNotes: e.target.value })} placeholder="Como devo agir para executar este setup corretamente?" /></Field>
       </div>
       <label className="check"><input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} /> Setup ativo</label>
-      <AttachmentField value={draft.attachments} onChange={(attachments) => setDraft({ ...draft, attachments })} title="Exemplos visuais do setup" />
+      <AttachmentField value={draft.attachments} onChange={(attachments) => setDraft((current) => ({ ...current, attachments }))} title="Exemplos visuais do setup" />
       <div className="actions"><button className="primary" onClick={save}>{editingId ? "Salvar alterações" : "Adicionar setup"}</button>{editingId && <button onClick={reset}>Cancelar</button>}</div>
     </div>
 
@@ -510,7 +527,18 @@ function SetupsPage({ state, setState }: { state: AppState; setState: React.Disp
       <div className="why"><b>Entrada:</b> {setup.entryCriteria}</div>
       {setup.invalidation && <div className="why"><b>Invalida quando:</b> {setup.invalidation}</div>}
       {!!setup.attachments.length && <div className="mini-images">{setup.attachments.slice(0, 3).map((img) => <img key={img.id} src={img.dataUrl} alt={img.name} />)}</div>}
-      <div className="card-actions"><button onClick={() => edit(setup)}>Editar</button><button className="danger" onClick={() => { if (confirm(translateUi("Remover este setup?", activeLanguage))) setState((s) => ({ ...s, setups: s.setups.filter((x) => x.id !== setup.id) })); }}>Remover</button></div>
+      <div className="card-actions"><button onClick={() => edit(setup)}>Editar</button><button className="danger" onClick={() => {
+        if (!confirm(translateUi("Remover este setup?", activeLanguage))) return;
+        setState((current) => ({
+          ...current,
+          setups: current.setups.filter((item) => item.id !== setup.id),
+          plans: current.plans.map((plan) => plan.setupId === setup.id ? { ...plan, setupId: undefined } : plan),
+          planTemplates: current.planTemplates.map((template) => template.setupId === setup.id ? { ...template, setupId: undefined } : template),
+          studies: current.studies.map((study) => study.setupId === setup.id ? { ...study, setupId: undefined } : study),
+          trainingRecords: current.trainingRecords.map((record) => record.setupId === setup.id ? { ...record, setupId: undefined } : record),
+          setupExamples: current.setupExamples.filter((example) => example.setupId !== setup.id),
+        }));
+      }}>Remover</button></div>
     </article>)}</div>
     {!state.setups.length && <div className="empty">Nenhum setup cadastrado. Registre primeiro os padrões que você realmente deseja repetir e reconhecer.</div>}
   </section>;
@@ -611,15 +639,22 @@ function PlanEditor({ initial, assets, setups, rules, onPersist, onCreateTemplat
   }
 
   function persist(next = draft, message = "Plano salvo.") {
-    if (!next.asset.trim() || !next.tradingDate) return;
+    if (!next.asset.trim() || !next.tradingDate) {
+      setNotice("Informe o ativo e a data do pregão antes de salvar.");
+      return false;
+    }
     const saved = { ...next, updatedAt: new Date().toISOString() };
     setDraft(saved);
     onPersist(saved);
     setNotice(message);
+    return true;
   }
 
   function freeze() {
-    if (!draft.asset.trim() || !draft.tradingDate) return;
+    if (!draft.asset.trim() || !draft.tradingDate) {
+      setNotice("Informe o ativo e a data do pregão antes de congelar.");
+      return;
+    }
     if (readiness.criticalIssues.length && !confirm(translateUi("Há pontos críticos pendentes na preparação. Deseja congelar mesmo assim?", activeLanguage))) return;
     const version = draft.versions.length + 1;
     const snapshot = snapshotFromPlan(draft, version);
@@ -646,6 +681,8 @@ function PlanEditor({ initial, assets, setups, rules, onPersist, onCreateTemplat
     const setup = setups.find((item) => item.id === draft.setupId);
     if (!setup) return;
     const scenarioA = draft.scenarios.find((s) => s.label === "A");
+    const scenarioHasContent = !!scenarioA && [scenarioA.title, scenarioA.trigger, scenarioA.confirmation, scenarioA.action, scenarioA.invalidation, scenarioA.stop, scenarioA.targets, scenarioA.avoid].some((value) => value.trim());
+    if (scenarioHasContent && !confirm(translateUi("O cenário A já possui conteúdo. Aplicar o setup substituirá vários campos. Deseja continuar?", activeLanguage))) return;
     setDraft({
       ...draft,
       marketContext: setup.marketContext || draft.marketContext,
@@ -723,7 +760,7 @@ function PlanEditor({ initial, assets, setups, rules, onPersist, onCreateTemplat
       <div className="scenario-grid">{draft.scenarios.map((scenario) => <ScenarioEditor key={scenario.id} scenario={scenario} onChange={(next) => patchScenario(scenario.id, next)} />)}</div>
 
       <Field label="Plano comportamental: se eu sentir/começar a fazer X, então farei Y"><textarea rows={5} value={draft.behaviorPlan} onChange={(e) => setDraft({ ...draft, behaviorPlan: e.target.value })} placeholder="Ex.: Se eu perceber vontade de recuperar prejuízo imediatamente, não enviarei nova ordem; vou me afastar da tela por 5 minutos e reler o limite diário." /></Field>
-      <AttachmentField disabled={isFrozen} value={draft.attachments} onChange={(attachments) => setDraft({ ...draft, attachments })} title="Gráficos e imagens do planejamento" />
+      <AttachmentField disabled={isFrozen} value={draft.attachments} onChange={(attachments) => setDraft((current) => ({ ...current, attachments }))} title="Gráficos e imagens do planejamento" />
     </fieldset> : <>
       <ComparisonPanel plan={draft} />
       <div className="review-callout">Preencha esta parte <b>depois do pregão</b>. O planejamento congelado acima permanece intacto para permitir uma comparação honesta.</div>
@@ -744,14 +781,14 @@ function PlanEditor({ initial, assets, setups, rules, onPersist, onCreateTemplat
         <p className="muted-text">Marque apenas regras que foram efetivamente descumpridas. Isso alimenta o histórico de recorrência.</p>
         {rules.length ? <div className="violation-grid">{rules.map((rule) => <label className="check" key={rule.id}><input type="checkbox" checked={draft.review.violatedRuleIds.includes(rule.id)} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, violatedRuleIds: e.target.checked ? [...draft.review.violatedRuleIds, rule.id] : draft.review.violatedRuleIds.filter((id) => id !== rule.id) } })} /> <span><b>{rule.title}</b> <small>({rule.category})</small></span></label>)}</div> : <div className="empty">Cadastre regras no Sistema de trade para registrar violações de forma estruturada.</div>}
       </div>
-      <AttachmentField value={draft.review.attachments} onChange={(attachments) => setDraft({ ...draft, review: { ...draft.review, attachments } })} title="Gráficos e imagens do que aconteceu" />
+      <AttachmentField value={draft.review.attachments} onChange={(attachments) => setDraft((current) => ({ ...current, review: { ...current.review, attachments } }))} title="Gráficos e imagens do que aconteceu" />
       <label className="check"><input type="checkbox" checked={!!draft.review.reviewedAt} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, reviewedAt: e.target.checked ? new Date().toISOString() : undefined } })} /> Marcar revisão como concluída</label>
     </>}
 
     <div className="actions sticky-actions">
       <button className="primary" onClick={() => persist(draft, section === "review" ? "Revisão salva." : "Rascunho salvo.")}>Salvar</button>
       {section === "plan" && !isFrozen && <button onClick={() => { const title = prompt(translateUi("Nome do template", activeLanguage), `${draft.asset || "Plano"} — ${draft.scenarios.find((scenario) => scenario.label === "A")?.title || "Template"}`); if (title?.trim()) { onCreateTemplate(templateFromPlan(draft, title.trim())); setNotice("Template de plano salvo."); } }}>Salvar como template</button>}
-      <button onClick={() => { persist(draft, "Plano salvo."); onClose(); }}>Salvar e fechar</button>
+      <button onClick={() => { if (persist(draft, "Plano salvo.")) onClose(); }}>Salvar e fechar</button>
       <button onClick={onClose}>Fechar sem salvar mudanças atuais</button>
     </div>
   </div>;
@@ -798,7 +835,10 @@ function StudyEditor({ initial, assets, setups, onSave, onClose }: {
   }
 
   function save(close = false) {
-    if (!draft.title.trim()) return;
+    if (!draft.title.trim()) {
+      setMessage("Informe um título para o estudo antes de salvar.");
+      return;
+    }
     const completedAt = draft.status === "completed" ? (draft.completedAt || new Date().toISOString()) : undefined;
     const next = { ...draft, completedAt, updatedAt: new Date().toISOString() };
     onSave(next);
@@ -847,7 +887,7 @@ function StudyEditor({ initial, assets, setups, onSave, onClose }: {
       <Field label="Aprendizados e próximos estudos"><textarea rows={6} value={draft.lessons} onChange={(e) => setDraft({ ...draft, lessons: e.target.value })} placeholder="O que deve ser praticado, investigado novamente ou transformado em regra/setup?" /></Field>
     </div>
 
-    <AttachmentField value={draft.attachments} onChange={(attachments) => setDraft({ ...draft, attachments })} title="Gráficos e imagens do estudo" />
+    <AttachmentField value={draft.attachments} onChange={(attachments) => setDraft((current) => ({ ...current, attachments }))} title="Gráficos e imagens do estudo" />
 
     <label className="check"><input type="checkbox" checked={draft.status === "completed"} onChange={(e) => setDraft({ ...draft, status: e.target.checked ? "completed" : "draft", completedAt: e.target.checked ? (draft.completedAt || new Date().toISOString()) : undefined })} /> Marcar estudo como concluído</label>
 
@@ -1164,26 +1204,80 @@ function parseCsvLine(line: string, delimiter: string) {
 }
 
 function parseDelimitedRows(text: string) {
-  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter((line) => line.trim());
-  if (lines.length < 2) return [];
-  const first = lines[0];
-  const delimiter = (first.match(/;/g)?.length || 0) > (first.match(/,/g)?.length || 0) ? ";" : ",";
-  const headers = parseCsvLine(first, delimiter);
-  return lines.slice(1).map((line) => {
-    const values = parseCsvLine(line, delimiter);
-    return Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""]));
-  });
+  const normalized = text.replace(/^\uFEFF/, "");
+  const firstLine = normalized.split(/\r?\n/, 1)[0] ?? "";
+  const delimiter = (firstLine.match(/;/g)?.length || 0) > (firstLine.match(/,/g)?.length || 0) ? ";" : ",";
+
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let quoted = false;
+
+  const pushCell = () => {
+    row.push(cell.trim());
+    cell = "";
+  };
+  const pushRow = () => {
+    pushCell();
+    if (row.some((value) => value.length > 0)) rows.push(row);
+    row = [];
+  };
+
+  for (let index = 0; index < normalized.length; index += 1) {
+    const char = normalized[index];
+
+    if (char === '"') {
+      if (quoted && normalized[index + 1] === '"') {
+        cell += '"';
+        index += 1;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (char === delimiter && !quoted) {
+      pushCell();
+    } else if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && normalized[index + 1] === "\n") index += 1;
+      pushRow();
+    } else {
+      cell += char;
+    }
+  }
+
+  if (cell.length || row.length) pushRow();
+  if (rows.length < 2) return [];
+
+  const headers = rows[0];
+  return rows.slice(1).map((values) =>
+    Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""])),
+  );
+}
+
+function validIsoDateParts(year: number, month: number, day: number) {
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
 function normalizedTradeDate(value: unknown) {
   const text = String(value ?? "").trim();
   if (!text) return "";
-  const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
-  const br = text.match(/^(\d{2})[\/-](\d{2})[\/-](\d{4})$/);
-  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
-  const parsed = new Date(text);
-  return Number.isNaN(parsed.getTime()) ? "" : isoDateLocal(parsed);
+
+  const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s]|$)/);
+  if (iso) {
+    const year = Number(iso[1]);
+    const month = Number(iso[2]);
+    const day = Number(iso[3]);
+    return validIsoDateParts(year, month, day) ? `${iso[1]}-${iso[2]}-${iso[3]}` : "";
+  }
+
+  const br = text.match(/^(\d{2})[\/-](\d{2})[\/-](\d{4})(?:[T\s]|$)/);
+  if (br) {
+    const day = Number(br[1]);
+    const month = Number(br[2]);
+    const year = Number(br[3]);
+    return validIsoDateParts(year, month, day) ? `${br[3]}-${br[2]}-${br[1]}` : "";
+  }
+
+  return "";
 }
 
 function importedValue(row: Record<string, unknown>, aliases: string[]) {
@@ -1377,11 +1471,11 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
   const reviewedPlans = filteredPlans.filter((plan) => !!plan.review.reviewedAt);
 
   const setupStats = useMemo(() => {
-    const groups = new Map<string, { title: string; total: number; yes: number; partial: number; no: number }>();
+    const groups = new Map<string, { id: string; title: string; total: number; yes: number; partial: number; no: number }>();
     for (const plan of reviewedPlans) {
       const key = plan.setupId || "__none__";
       const title = plan.setupId ? state.setups.find((setup) => setup.id === plan.setupId)?.title || "Setup removido" : "Sem setup";
-      const item = groups.get(key) || { title, total: 0, yes: 0, partial: 0, no: 0 };
+      const item = groups.get(key) || { id: key, title, total: 0, yes: 0, partial: 0, no: 0 };
       item.total += 1;
       if (plan.review.followedPlan === "Sim") item.yes += 1;
       else if (plan.review.followedPlan === "Parcialmente") item.partial += 1;
@@ -1497,7 +1591,7 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
     </div>
 
     <div className="history-metrics-grid">
-      <div className="panel"><span className="eyebrow">ADERÊNCIA</span><h2>Por setup</h2>{setupStats.length ? <div className="metric-list">{setupStats.map((item) => <div className="metric-row" key={item.title}><div><b>{item.title}</b><span>{item.total} revisão(ões) • {item.partial} parcial(is) • {item.no} não</span></div><strong>{item.total ? Math.round(item.yes / item.total * 100) : 0}%</strong></div>)}</div> : <div className="empty">Ainda não há revisões suficientes neste recorte.</div>}</div>
+      <div className="panel"><span className="eyebrow">ADERÊNCIA</span><h2>Por setup</h2>{setupStats.length ? <div className="metric-list">{setupStats.map((item) => <div className="metric-row" key={item.id}><div><b>{item.title}</b><span>{item.total} revisão(ões) • {item.partial} parcial(is) • {item.no} não</span></div><strong>{item.total ? Math.round(item.yes / item.total * 100) : 0}%</strong></div>)}</div> : <div className="empty">Ainda não há revisões suficientes neste recorte.</div>}</div>
 
       <div className="panel"><span className="eyebrow">DISCIPLINA</span><h2>Regras mais violadas</h2>{violationStats.length ? <div className="metric-list">{violationStats.map((item) => <div className="metric-row" key={item.id}><div><b>{item.title}</b><span>{item.category}</span></div><strong>{item.count}×</strong></div>)}</div> : <div className="empty">Nenhuma violação estruturada registrada neste recorte.</div>}</div>
 
@@ -1838,10 +1932,12 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
     try {
       const path = await chooseDesktopBackupFile();
       if (!path) return;
+      const preview = await previewDesktopBackup(path);
+      if (!preview) return;
+      const next = parseBackup(preview);
       if (!confirm(translateUi("Restaurar este backup substituirá os dados atuais do aplicativo. Deseja continuar?", activeLanguage))) return;
       const json = await restoreDesktopBackup(path);
       if (!json) return;
-      const next = parseBackup(json);
       setState(next);
       setAssetsText(next.settings.assets.join(", "));
       setDesktopStorageMessage("Backup restaurado com sucesso. Um ponto de restauração dos dados anteriores foi criado automaticamente.");
@@ -1854,11 +1950,32 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
     if (!file) return;
     try {
       const next = parseBackup(await file.text());
+      clearStorageLoadGuard();
       setState(next);
       setAssetsText(next.settings.assets.join(", "));
       setMessage("Backup importado com sucesso. Backups anteriores são migrados automaticamente para o schema atual.");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Falha ao importar backup.");
+    }
+  }
+
+  async function clearAllData() {
+    if (!confirm(translateUi("Apagar todos os dados locais? Esta ação não pode ser desfeita.", activeLanguage))) return;
+
+    try {
+      if (isDesktopApp()) {
+        const path = await createDesktopBackup();
+        if (!path) throw new Error("Não foi possível criar o backup de segurança antes da limpeza.");
+        setDesktopStorageMessage(`Backup de segurança criado em: ${path}`);
+      }
+      localStorage.removeItem(STORAGE_KEY);
+      clearStorageLoadGuard();
+      const fresh = initialState();
+      setState(fresh);
+      setAssetsText(fresh.settings.assets.join(", "));
+      setMessage("Dados locais apagados. No desktop, um backup de segurança foi criado antes da limpeza.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -1907,17 +2024,19 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
         <h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v8 inclui planos, estudos, templates, execuções importadas, histórico estruturado, treinamento deliberado, biblioteca de setups, versões congeladas e preferência de idioma.</p>
         <div className="stack-actions"><button className="primary" onClick={() => exportBackup(state)}>Exportar backup JSON</button><button onClick={() => fileRef.current?.click()}>Importar backup JSON</button><input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => void importFile(e.target.files?.[0])} /></div>
         {message && <div className="notice">{message}</div>}
-        <div className="danger-zone"><h3>Zona de risco</h3><p>Apaga todos os dados deste navegador. Exporte um backup antes, se necessário.</p><button className="danger" onClick={() => { if (confirm(translateUi("Apagar todos os dados locais? Esta ação não pode ser desfeita.", activeLanguage))) { localStorage.removeItem(STORAGE_KEY); const fresh = initialState(); setState(fresh); setAssetsText(fresh.settings.assets.join(", ")); } }}>Apagar todos os dados</button></div>
+        <div className="danger-zone"><h3>Zona de risco</h3><p>Apaga os dados locais deste dispositivo. No aplicativo desktop, um backup de segurança é criado antes da limpeza.</p><button className="danger" onClick={() => void clearAllData()}>Apagar todos os dados</button></div>
       </div>
     </div>
   </section>;
 }
 
 export default function App() {
-  const [state, setState] = useState<AppState>(() => loadState());
+  const [startupLoad] = useState(() => loadStateResult());
+  const [state, setState] = useState<AppState>(() => startupLoad.state);
   const [tab, setTab] = useState<Tab>("dashboard");
-  const [saveError, setSaveError] = useState("");
+  const [saveError, setSaveError] = useState(startupLoad.error ?? "");
   const [desktopReady, setDesktopReady] = useState(() => !isDesktopApp());
+  const [desktopLoadBlocked, setDesktopLoadBlocked] = useState(false);
 
   activeLanguage = state.settings.language;
   activeLocale = localeForLanguage(activeLanguage);
@@ -1929,31 +2048,46 @@ export default function App() {
     void loadDesktopState()
       .then(async (json) => {
         if (!active) return;
+
         if (json) {
-          setState(parseBackup(json));
-        } else {
-          const localState = loadState();
-          await saveDesktopState(JSON.stringify(localState));
-          if (active) setState(localState);
+          const loaded = parseBackup(json);
+          setState(loaded);
+          setDesktopLoadBlocked(false);
+          setDesktopReady(true);
+          return;
         }
+
+        if (startupLoad.error) {
+          throw new Error(startupLoad.error);
+        }
+
+        const localState = startupLoad.state;
+        const serialized = JSON.stringify({ ...localState, updatedAt: new Date().toISOString() });
+        const result = await saveDesktopState(serialized, isoDateLocal());
+        if (!active) return;
+        setState(localState);
+        setSaveError(result?.backupWarning ? `Dados salvos, mas o backup automático falhou: ${result.backupWarning}` : "");
+        setDesktopLoadBlocked(false);
+        setDesktopReady(true);
       })
       .catch((error) => {
-        if (active) setSaveError(error instanceof Error ? error.message : String(error));
-      })
-      .finally(() => {
-        if (active) setDesktopReady(true);
+        if (!active) return;
+        setDesktopLoadBlocked(true);
+        setDesktopReady(false);
+        setSaveError(`Modo protegido: os dados desktop não foram sobrescritos. ${error instanceof Error ? error.message : String(error)}`);
       });
     return () => { active = false; };
-  }, []);
+  }, [startupLoad]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = state.settings.theme;
 
     if (isDesktopApp()) {
-      if (!desktopReady) return;
+      if (!desktopReady || desktopLoadBlocked) return;
       const timer = window.setTimeout(() => {
-        void saveDesktopState(JSON.stringify(state))
-          .then(() => setSaveError(""))
+        const serialized = JSON.stringify({ ...state, updatedAt: new Date().toISOString() });
+        void saveDesktopState(serialized, isoDateLocal())
+          .then((result) => setSaveError(result?.backupWarning ? `Dados salvos, mas o backup automático falhou: ${result.backupWarning}` : ""))
           .catch((error) => setSaveError(error instanceof Error ? error.message : String(error)));
       }, 250);
       return () => window.clearTimeout(timer);
@@ -1965,7 +2099,7 @@ export default function App() {
     } catch {
       setSaveError("O navegador não conseguiu salvar os dados. Exporte um backup e reduza a quantidade de imagens.");
     }
-  }, [state, desktopReady]);
+  }, [state, desktopReady, desktopLoadBlocked]);
 
   const nav: Array<[Tab, string, string]> = [
     ["dashboard", "Visão geral", "⌂"],
@@ -1986,14 +2120,14 @@ export default function App() {
     </aside>
     <main>
       <header><div><span className="mobile-title">Trade Blueprint</span></div><div className="save-state"><span className={saveError ? "bad" : "good"}></span>{saveError || "Salvamento local automático"}</div></header>
-      {tab === "dashboard" && <Dashboard state={state} onOpenPlans={() => setTab("plans")} onOpenSetups={() => setTab("setups")} />}
-      {tab === "rules" && <RulesPage state={state} setState={setState} />}
-      {tab === "setups" && <SetupsPage state={state} setState={setState} />}
-      {tab === "plans" && <PlansPage state={state} setState={setState} />}
-      {tab === "studies" && <StudiesPage state={state} setState={setState} />}
-      {tab === "history" && <HistoryPage state={state} setState={setState} />}
-      {tab === "training" && <TrainingPage state={state} setState={setState} />}
-      {tab === "settings" && <SettingsPage state={state} setState={setState} />}
+      <div hidden={tab !== "dashboard"}><Dashboard state={state} onOpenPlans={() => setTab("plans")} onOpenSetups={() => setTab("setups")} /></div>
+      <div hidden={tab !== "rules"}><RulesPage state={state} setState={setState} /></div>
+      <div hidden={tab !== "setups"}><SetupsPage state={state} setState={setState} /></div>
+      <div hidden={tab !== "plans"}><PlansPage state={state} setState={setState} /></div>
+      <div hidden={tab !== "studies"}><StudiesPage state={state} setState={setState} /></div>
+      <div hidden={tab !== "history"}><HistoryPage state={state} setState={setState} /></div>
+      <div hidden={tab !== "training"}><TrainingPage state={state} setState={setState} /></div>
+      <div hidden={tab !== "settings"}><SettingsPage state={state} setState={setState} /></div>
     </main>
   </div>;
 }
