@@ -50,7 +50,7 @@ jobs:
           workspaces: src-tauri -> target
 
       - name: Install frontend dependencies
-        run: npm install
+        run: npm ci
 
       - name: Validate frontend
         run: |
