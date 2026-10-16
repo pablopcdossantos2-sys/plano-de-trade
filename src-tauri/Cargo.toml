@@ -1,6 +1,6 @@
 [package]
 name = "trade-blueprint"
-version = "0.11.0"
+version = "0.12.0"
 description = "Trade Blueprint desktop application"
 authors = ["Pablo Phillipe Cândido dos Santos"]
 edition = "2021"
