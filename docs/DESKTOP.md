@@ -250,3 +250,26 @@ A estrutura de anexos continua compatível com os backups JSON atuais.
 ## Release assinada ainda pendente
 
 A infraestrutura do updater está pronta, mas a primeira Release oficial assinada e o teste completo **versão A → versão B** continuam dependentes da configuração das chaves privadas de assinatura no GitHub.
+
+
+## Reprodutibilidade do build Rust
+
+O backend desktop passa a versionar `src-tauri/Cargo.lock`.
+
+As validações de CI usam `--locked` em testes e Clippy, evitando que mudanças posteriores no índice do crates.io alterem silenciosamente a árvore de dependências.
+
+Em 16/10/2026, todas as versões 4.x do crate `zip` exigidas pelo updater Tauri atual estavam marcadas como yanked no crates.io. Para preservar o updater 2.14.0 e suas proteções atuais de versão assinada, o projeto usa temporariamente a tag oficial `zip-rs/zip2 v4.6.1` por meio de `[patch.crates-io]` no `Cargo.toml`. O `Cargo.lock` fixa o commit correspondente.
+
+Esse patch deve ser removido quando o updater Tauri deixar de depender da linha `zip 4.x` retirada do índice.
+
+## Estado validado do instalador
+
+Em 16/10/2026, o workflow **Desktop Windows** concluiu com sucesso:
+
+- validação do frontend;
+- testes Rust;
+- Clippy;
+- geração do instalador NSIS;
+- upload do artefato `trade-blueprint-windows`.
+
+Isso valida o empacotamento Windows não assinado de CI. A Release oficial assinada continua condicionada às chaves do updater configuradas no GitHub.
