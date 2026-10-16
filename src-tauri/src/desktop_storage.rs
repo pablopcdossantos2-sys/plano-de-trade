@@ -315,7 +315,7 @@ pub fn restore_desktop_backup(app: AppHandle, path: String) -> Result<String, St
         write_raw_backup_file(&app, &connection, &current, "pre-restore")?;
     }
 
-    save_state_internal(&app, &connection, &incoming, false, None)?;
+    let _ = save_state_internal(&app, &connection, &incoming, false, None)?;
     Ok(incoming)
 }
 
