@@ -81,8 +81,8 @@ jobs:
           npm run typecheck
           npm run build
           cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
-          cargo test --manifest-path src-tauri/Cargo.toml
-          cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+          cargo test --locked --manifest-path src-tauri/Cargo.toml
+          cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
       - name: Validate updater signing configuration
         shell: pwsh
