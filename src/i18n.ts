@@ -15,6 +15,13 @@ export function localeForLanguage(language: UiLanguage) {
 }
 
 const en: Record<string, string> = {
+  "Informe o ativo e a data do pregão antes de salvar.": "Enter the asset and trading date before saving.",
+  "Informe o ativo e a data do pregão antes de congelar.": "Enter the asset and trading date before freezing.",
+  "O cenário A já possui conteúdo. Aplicar o setup substituirá vários campos. Deseja continuar?": "Scenario A already contains content. Applying the setup will replace several fields. Continue?",
+  "Informe um título para o estudo antes de salvar.": "Enter a title for the study before saving.",
+  "Remover esta regra?": "Remove this rule?",
+  "Dados locais apagados. No desktop, um backup de segurança foi criado antes da limpeza.": "Local data deleted. On desktop, a safety backup was created before clearing.",
+  "Apaga os dados locais deste dispositivo. No aplicativo desktop, um backup de segurança é criado antes da limpeza.": "Deletes local data from this device. In the desktop app, a safety backup is created before clearing.",
   "O schema v8 inclui planos, estudos, templates, execuções importadas, histórico estruturado, treinamento deliberado, biblioteca de setups, versões congeladas e preferência de idioma.": "Schema v8 includes plans, studies, templates, imported executions, structured history, deliberate training, the setup library, frozen versions, and language preference.",
   "Treinamento": "Training",
   "TREINAMENTO DELIBERADO": "DELIBERATE TRAINING",
@@ -554,6 +561,13 @@ const en: Record<string, string> = {
 };
 
 const es: Record<string, string> = {
+  "Informe o ativo e a data do pregão antes de salvar.": "Introduce el activo y la fecha de la sesión antes de guardar.",
+  "Informe o ativo e a data do pregão antes de congelar.": "Introduce el activo y la fecha de la sesión antes de congelar.",
+  "O cenário A já possui conteúdo. Aplicar o setup substituirá vários campos. Deseja continuar?": "El escenario A ya contiene información. Aplicar el setup reemplazará varios campos. ¿Deseas continuar?",
+  "Informe um título para o estudo antes de salvar.": "Introduce un título para el estudio antes de guardar.",
+  "Remover esta regra?": "¿Eliminar esta regla?",
+  "Dados locais apagados. No desktop, um backup de segurança foi criado antes da limpeza.": "Datos locales eliminados. En escritorio se creó una copia de seguridad antes de limpiar.",
+  "Apaga os dados locais deste dispositivo. No aplicativo desktop, um backup de segurança é criado antes da limpeza.": "Elimina los datos locales de este dispositivo. En la aplicación de escritorio se crea una copia de seguridad antes de limpiar.",
   "O schema v8 inclui planos, estudos, templates, execuções importadas, histórico estruturado, treinamento deliberado, biblioteca de setups, versões congeladas e preferência de idioma.": "El schema v8 incluye planes, estudios, plantillas, ejecuciones importadas, historial estructurado, entrenamiento deliberado, biblioteca de setups, versiones congeladas y preferencia de idioma.",
   "Treinamento": "Entrenamiento",
   "TREINAMENTO DELIBERADO": "ENTRENAMIENTO DELIBERADO",
