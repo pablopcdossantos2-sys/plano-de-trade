@@ -15,6 +15,10 @@ export function localeForLanguage(language: UiLanguage) {
 }
 
 const en: Record<string, string> = {
+  "Há alterações não salvas. Fechar mesmo assim?": "There are unsaved changes. Close anyway?",
+  "Modo protegido de armazenamento": "Protected storage mode",
+  "Abrir recuperação": "Open recovery",
+  "No aplicativo instalado, o SQLite é o armazenamento principal. Para levar dados de um navegador externo ao desktop, exporte e importe o backup JSON.": "In the installed app, SQLite is the primary storage. To move data from an external browser to desktop, export and import the JSON backup.",
   "Informe o ativo e a data do pregão antes de salvar.": "Enter the asset and trading date before saving.",
   "Informe o ativo e a data do pregão antes de congelar.": "Enter the asset and trading date before freezing.",
   "O cenário A já possui conteúdo. Aplicar o setup substituirá vários campos. Deseja continuar?": "Scenario A already contains content. Applying the setup will replace several fields. Continue?",
@@ -561,6 +565,10 @@ const en: Record<string, string> = {
 };
 
 const es: Record<string, string> = {
+  "Há alterações não salvas. Fechar mesmo assim?": "Hay cambios sin guardar. ¿Cerrar de todos modos?",
+  "Modo protegido de armazenamento": "Modo de almacenamiento protegido",
+  "Abrir recuperação": "Abrir recuperación",
+  "No aplicativo instalado, o SQLite é o armazenamento principal. Para levar dados de um navegador externo ao desktop, exporte e importe o backup JSON.": "En la aplicación instalada, SQLite es el almacenamiento principal. Para llevar datos de un navegador externo al escritorio, exporta e importa la copia JSON.",
   "Informe o ativo e a data do pregão antes de salvar.": "Introduce el activo y la fecha de la sesión antes de guardar.",
   "Informe o ativo e a data do pregão antes de congelar.": "Introduce el activo y la fecha de la sesión antes de congelar.",
   "O cenário A já possui conteúdo. Aplicar o setup substituirá vários campos. Deseja continuar?": "El escenario A ya contiene información. Aplicar el setup reemplazará varios campos. ¿Deseas continuar?",
