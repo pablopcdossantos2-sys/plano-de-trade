@@ -54,6 +54,7 @@ jobs:
 
       - name: Validate frontend
         run: |
+          npm test
           npm run typecheck
           npm run build
 
