@@ -154,7 +154,11 @@ fn rotate_automatic_backups(directory: &Path) -> Result<(), String> {
         .filter(|path| {
             path.file_name()
                 .and_then(|name| name.to_str())
-                .map(|name| (name.starts_with("trade-blueprint-auto-") || name.starts_with("plano-de-trade-auto-")) && name.ends_with(".json"))
+                .map(|name| {
+                    (name.starts_with("trade-blueprint-auto-")
+                        || name.starts_with("plano-de-trade-auto-"))
+                        && name.ends_with(".json")
+                })
                 .unwrap_or(false)
         })
         .collect();
