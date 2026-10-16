@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { normalizedTradeDate, parseDelimitedRows } from "../src/journalImport.ts";
+import { normalizedTradeDate, parseDelimitedRows, parseJournalRows } from "../src/journalImport.ts";
 
 test("normaliza datas brasileiras com ou sem horario", () => {
   assert.equal(normalizedTradeDate("16/10/2026"), "2026-10-16");
@@ -39,4 +39,29 @@ test("CSV aceita aspas escapadas e delimitador por virgula", () => {
     asset: "WINFUT",
     notes: 'rompeu "e voltou"',
   }]);
+});
+
+
+test("importacao JSON aceita array direto, trades e data", () => {
+  assert.deepEqual(
+    parseJournalRows('[{"data":"16/10/2026","ativo":"WINFUT"}]'),
+    [{ data: "16/10/2026", ativo: "WINFUT" }],
+  );
+
+  assert.deepEqual(
+    parseJournalRows('{"trades":[{"date":"2026-10-16","asset":"WDOFUT"}]}'),
+    [{ date: "2026-10-16", asset: "WDOFUT" }],
+  );
+
+  assert.deepEqual(
+    parseJournalRows('{"data":[{"tradingDate":"2026-10-16","asset":"WINFUT"}]}'),
+    [{ tradingDate: "2026-10-16", asset: "WINFUT" }],
+  );
+});
+
+test("importacao JSON ignora elementos que nao sao objetos de trade", () => {
+  assert.deepEqual(
+    parseJournalRows('[null,1,"texto",["array"],{"data":"16/10/2026","ativo":"WINFUT"}]'),
+    [{ data: "16/10/2026", ativo: "WINFUT" }],
+  );
 });
