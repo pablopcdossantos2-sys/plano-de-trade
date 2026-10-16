@@ -131,6 +131,20 @@ fn load_state_from_connection(connection: &Connection) -> Result<Option<String>,
         .map_err(|error| format!("Não foi possível ler o estado do banco: {error}"))
 }
 
+fn write_raw_backup_file(
+    app: &AppHandle,
+    connection: &Connection,
+    state_json: &str,
+    kind: &str,
+) -> Result<String, String> {
+    let directory = backup_directory_internal(app, connection)?;
+    let stamp = timestamp()?;
+    let path = directory.join(format!("trade-blueprint-{kind}-{stamp}.json"));
+    fs::write(&path, state_json)
+        .map_err(|error| format!("Não foi possível criar o backup: {error}"))?;
+    Ok(path.to_string_lossy().to_string())
+}
+
 fn write_backup_file(
     app: &AppHandle,
     connection: &Connection,
@@ -138,12 +152,7 @@ fn write_backup_file(
     kind: &str,
 ) -> Result<String, String> {
     validate_state_json(state_json)?;
-    let directory = backup_directory_internal(app, connection)?;
-    let stamp = timestamp()?;
-    let path = directory.join(format!("trade-blueprint-{kind}-{stamp}.json"));
-    fs::write(&path, state_json)
-        .map_err(|error| format!("Não foi possível criar o backup: {error}"))?;
-    Ok(path.to_string_lossy().to_string())
+    write_raw_backup_file(app, connection, state_json, kind)
 }
 
 fn rotate_automatic_backups(directory: &Path) -> Result<(), String> {
@@ -303,7 +312,7 @@ pub fn restore_desktop_backup(app: AppHandle, path: String) -> Result<String, St
     validate_state_json(&incoming)?;
 
     if let Some(current) = load_state_from_connection(&connection)? {
-        write_backup_file(&app, &connection, &current, "pre-restore")?;
+        write_raw_backup_file(&app, &connection, &current, "pre-restore")?;
     }
 
     save_state_internal(&app, &connection, &incoming, false, None)?;
