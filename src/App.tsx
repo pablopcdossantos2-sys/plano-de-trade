@@ -674,6 +674,12 @@ function PlanEditor({ initial, assets, setups, rules, onPersist, onCreateTemplat
     setNotice(`Versão ${version} congelada. O planejamento agora está protegido contra alterações acidentais.`);
   }
 
+  function closeWithoutSaving() {
+    const changed = JSON.stringify(draft) !== JSON.stringify(initial);
+    if (changed && !confirm(translateUi("Há alterações não salvas. Fechar mesmo assim?", activeLanguage))) return;
+    onClose();
+  }
+
   function createNewVersion() {
     const next = { ...draft, planStatus: "draft" as const, updatedAt: new Date().toISOString() };
     setDraft(next);
@@ -794,7 +800,7 @@ function PlanEditor({ initial, assets, setups, rules, onPersist, onCreateTemplat
       <button className="primary" onClick={() => persist(draft, section === "review" ? "Revisão salva." : "Rascunho salvo.")}>Salvar</button>
       {section === "plan" && !isFrozen && <button onClick={() => { const title = prompt(translateUi("Nome do template", activeLanguage), `${draft.asset || "Plano"} — ${draft.scenarios.find((scenario) => scenario.label === "A")?.title || "Template"}`); if (title?.trim()) { onCreateTemplate(templateFromPlan(draft, title.trim())); setNotice("Template de plano salvo."); } }}>Salvar como template</button>}
       <button onClick={() => { if (persist(draft, "Plano salvo.")) onClose(); }}>Salvar e fechar</button>
-      <button onClick={onClose}>Fechar sem salvar mudanças atuais</button>
+      <button onClick={closeWithoutSaving}>Fechar sem salvar mudanças atuais</button>
     </div>
   </div>;
 }
@@ -837,6 +843,12 @@ function StudyEditor({ initial, assets, setups, onSave, onClose }: {
       scenarios: d.scenarios.map((scenario) => scenario.id === nextA.id ? nextA : scenario),
     }));
     setMessage("Setup aplicado ao estudo. Adapte os campos ao objetivo analítico.");
+  }
+
+  function closeWithoutSaving() {
+    const changed = JSON.stringify(draft) !== JSON.stringify(initial);
+    if (changed && !confirm(translateUi("Há alterações não salvas. Fechar mesmo assim?", activeLanguage))) return;
+    onClose();
   }
 
   function save(close = false) {
@@ -896,7 +908,7 @@ function StudyEditor({ initial, assets, setups, onSave, onClose }: {
 
     <label className="check"><input type="checkbox" checked={draft.status === "completed"} onChange={(e) => setDraft({ ...draft, status: e.target.checked ? "completed" : "draft", completedAt: e.target.checked ? (draft.completedAt || new Date().toISOString()) : undefined })} /> Marcar estudo como concluído</label>
 
-    <div className="actions sticky-actions"><button className="primary" onClick={() => save(false)}>Salvar</button><button onClick={() => save(true)}>Salvar e fechar</button><button onClick={onClose}>Fechar sem salvar mudanças atuais</button></div>
+    <div className="actions sticky-actions"><button className="primary" onClick={() => save(false)}>Salvar</button><button onClick={() => save(true)}>Salvar e fechar</button><button onClick={closeWithoutSaving}>Fechar sem salvar mudanças atuais</button></div>
   </div>;
 }
 
@@ -1921,7 +1933,8 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
       if (!json) return;
       setState(next);
       setAssetsText(next.settings.assets.join(", "));
-      setDesktopStorageMessage("Backup restaurado com sucesso. Um ponto de restauração dos dados anteriores foi criado automaticamente.");
+      setDesktopStorageMessage("Backup restaurado com sucesso. Um ponto de restauração dos dados anteriores foi criado automaticamente. Recarregando a interface…");
+      window.setTimeout(() => window.location.reload(), 350);
     } catch (error) {
       setDesktopStorageMessage(error instanceof Error ? error.message : String(error));
     }
@@ -1988,7 +2001,7 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
 
             <div className="desktop-storage-panel">
               <h3>Armazenamento desktop</h3>
-              <p className="muted-text">No aplicativo instalado, o SQLite é o armazenamento principal. O conteúdo existente do navegador é migrado automaticamente na primeira execução desktop.</p>
+              <p className="muted-text">No aplicativo instalado, o SQLite é o armazenamento principal. Para levar dados de um navegador externo ao desktop, exporte e importe o backup JSON.</p>
               <div className="desktop-path"><span>Pasta de backups</span><code>{desktopBackupDir || "Carregando…"}</code></div>
               <p className="muted-text">Um backup automático é mantido por dia, com rotação dos 10 backups automáticos mais recentes. Antes de uma atualização ou restauração, o aplicativo cria um backup de segurança.</p>
               <div className="stack-actions">
@@ -2102,6 +2115,7 @@ export default function App() {
     </aside>
     <main>
       <header><div><span className="mobile-title">Trade Blueprint</span></div><div className="save-state"><span className={saveError ? "bad" : "good"}></span>{saveError || "Salvamento local automático"}</div></header>
+      {saveError && (startupLoad.error || desktopLoadBlocked) && <div className="storage-protection-banner"><div><b>Modo protegido de armazenamento</b><span>{saveError}</span></div><button onClick={() => setTab("settings")}>Abrir recuperação</button></div>}
       <div hidden={tab !== "dashboard"}><Dashboard state={state} onOpenPlans={() => setTab("plans")} onOpenSetups={() => setTab("setups")} /></div>
       <div hidden={tab !== "rules"}><RulesPage state={state} setState={setState} /></div>
       <div hidden={tab !== "setups"}><SetupsPage state={state} setState={setState} /></div>
