@@ -22,6 +22,13 @@ pub struct IntegrityInfo {
     pub backup_directory: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DesktopSaveResult {
+    pub saved: bool,
+    pub backup_warning: Option<String>,
+}
+
 fn timestamp() -> Result<u64, String> {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -165,9 +172,20 @@ fn maybe_create_automatic_backup(
     app: &AppHandle,
     connection: &Connection,
     state_json: &str,
+    local_day: Option<&str>,
 ) -> Result<(), String> {
-    let day = timestamp()? / 86_400;
-    let current_marker = day.to_string();
+    let current_marker = local_day
+        .filter(|value| {
+            value.len() == 10
+                && value.as_bytes()[4] == b'-'
+                && value.as_bytes()[7] == b'-'
+                && value
+                    .chars()
+                    .enumerate()
+                    .all(|(index, ch)| index == 4 || index == 7 || ch.is_ascii_digit())
+        })
+        .map(str::to_string)
+        .unwrap_or_else(|| (timestamp().unwrap_or_default() / 86_400).to_string());
     if get_config(connection, "last_auto_backup_day")?.as_deref() == Some(current_marker.as_str()) {
         return Ok(());
     }
@@ -184,7 +202,8 @@ fn save_state_internal(
     connection: &Connection,
     state_json: &str,
     make_auto_backup: bool,
-) -> Result<(), String> {
+    local_day: Option<&str>,
+) -> Result<Option<String>, String> {
     validate_state_json(state_json)?;
     let stamp = timestamp()?;
     connection
@@ -195,10 +214,12 @@ fn save_state_internal(
         )
         .map_err(|error| format!("Não foi possível salvar o estado no SQLite: {error}"))?;
 
-    if make_auto_backup {
-        maybe_create_automatic_backup(app, connection, state_json)?;
-    }
-    Ok(())
+    let backup_warning = if make_auto_backup {
+        maybe_create_automatic_backup(app, connection, state_json, local_day).err()
+    } else {
+        None
+    };
+    Ok(backup_warning)
 }
 
 #[tauri::command]
@@ -208,10 +229,18 @@ pub fn load_desktop_state(app: AppHandle) -> Result<Option<String>, String> {
 }
 
 #[tauri::command]
-pub fn save_desktop_state(app: AppHandle, state_json: String) -> Result<bool, String> {
+pub fn save_desktop_state(
+    app: AppHandle,
+    state_json: String,
+    local_day: Option<String>,
+) -> Result<DesktopSaveResult, String> {
     let connection = open_db(&app)?;
-    save_state_internal(&app, &connection, &state_json, true)?;
-    Ok(true)
+    let backup_warning =
+        save_state_internal(&app, &connection, &state_json, true, local_day.as_deref())?;
+    Ok(DesktopSaveResult {
+        saved: true,
+        backup_warning,
+    })
 }
 
 #[tauri::command]
@@ -255,6 +284,14 @@ pub fn create_desktop_backup(app: AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
+pub fn preview_desktop_backup(path: String) -> Result<String, String> {
+    let incoming = fs::read_to_string(PathBuf::from(path.trim()))
+        .map_err(|error| format!("Não foi possível ler o backup selecionado: {error}"))?;
+    validate_state_json(&incoming)?;
+    Ok(incoming)
+}
+
+#[tauri::command]
 pub fn restore_desktop_backup(app: AppHandle, path: String) -> Result<String, String> {
     let connection = open_db(&app)?;
     let incoming = fs::read_to_string(PathBuf::from(path.trim()))
@@ -262,10 +299,10 @@ pub fn restore_desktop_backup(app: AppHandle, path: String) -> Result<String, St
     validate_state_json(&incoming)?;
 
     if let Some(current) = load_state_from_connection(&connection)? {
-        let _ = write_backup_file(&app, &connection, &current, "pre-restore");
+        write_backup_file(&app, &connection, &current, "pre-restore")?;
     }
 
-    save_state_internal(&app, &connection, &incoming, false)?;
+    save_state_internal(&app, &connection, &incoming, false, None)?;
     Ok(incoming)
 }
 
