@@ -1162,6 +1162,20 @@ type GalleryItem = {
   date?: string;
 };
 
+function dataUrlToBlob(dataUrl: string) {
+  const comma = dataUrl.indexOf(",");
+  if (comma < 0) throw new Error("Data URL de imagem inválido.");
+
+  const metadata = dataUrl.slice(0, comma);
+  const payload = dataUrl.slice(comma + 1);
+  const mime = metadata.match(/^data:([^;,]+)/)?.[1] || "application/octet-stream";
+  const bytes = metadata.includes(";base64")
+    ? Uint8Array.from(atob(payload), (char) => char.charCodeAt(0))
+    : new TextEncoder().encode(decodeURIComponent(payload));
+
+  return new Blob([bytes], { type: mime });
+}
+
 function avg(values: number[]) {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 }
@@ -1362,6 +1376,7 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
   const [dateTo, setDateTo] = useState("");
   const [search, setSearch] = useState("");
   const [galleryPreview, setGalleryPreview] = useState<GalleryItem | null>(null);
+  const [galleryPreviewUrl, setGalleryPreviewUrl] = useState("");
 
   const filteredPlans = useMemo(() => state.plans.filter((plan) => {
     if (asset && plan.asset !== asset) return false;
@@ -1437,6 +1452,21 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
     }
     return items.slice(0, 50);
   }, [search, state.plans, state.rules, state.setups]);
+
+  useEffect(() => {
+    if (!galleryPreview) {
+      setGalleryPreviewUrl("");
+      return;
+    }
+
+    try {
+      const objectUrl = URL.createObjectURL(dataUrlToBlob(galleryPreview.src));
+      setGalleryPreviewUrl(objectUrl);
+      return () => URL.revokeObjectURL(objectUrl);
+    } catch {
+      setGalleryPreviewUrl("");
+    }
+  }, [galleryPreview]);
 
   const gallery = useMemo(() => {
     const items: GalleryItem[] = [];
@@ -1525,7 +1555,7 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
     {galleryPreview && <div className="gallery-modal" role="dialog" aria-modal="true" aria-label={galleryPreview.name} onClick={() => setGalleryPreview(null)}>
       <div className="gallery-modal-content" onClick={(event) => event.stopPropagation()}>
         <div className="gallery-modal-head"><div><b>{galleryPreview.source}</b><span>{galleryPreview.date ? fmtDate(galleryPreview.date) : galleryPreview.name}</span></div><button type="button" onClick={() => setGalleryPreview(null)}>Fechar</button></div>
-        <img src={galleryPreview.src} alt={galleryPreview.name} />
+        <img src={galleryPreviewUrl || galleryPreview.src} alt={galleryPreview.name} />
       </div>
     </div>}
 
