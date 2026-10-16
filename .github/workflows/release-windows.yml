@@ -78,6 +78,7 @@ jobs:
 
       - name: Validate source
         run: |
+          npm test
           npm run typecheck
           npm run build
           cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
