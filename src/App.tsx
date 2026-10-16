@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { prepareImage } from "./images";
 import { normalizedTradeDate, parseDelimitedRows } from "./journalImport";
-import { clearStorageLoadGuard, exportBackup, initialState, loadStateResult, parseBackup, saveState, STORAGE_KEY } from "./storage";
+import { clearStorageLoadGuard, exportBackup, initialState, loadStateResult, parseBackup, saveState, serializeState, STORAGE_KEY } from "./storage";
 import { localeForLanguage, translateUi, useInterfaceLanguage, type UiLanguage } from "./i18n";
 import {
   checkDesktopIntegrity,
@@ -1995,7 +1995,7 @@ export default function App() {
         }
 
         const localState = startupLoad.state;
-        const serialized = JSON.stringify({ ...localState, updatedAt: new Date().toISOString() });
+        const serialized = serializeState(localState);
         const result = await saveDesktopState(serialized, isoDateLocal());
         if (!active) return;
         setState(localState);
@@ -2018,7 +2018,7 @@ export default function App() {
     if (isDesktopApp()) {
       if (!desktopReady || desktopLoadBlocked) return;
       const timer = window.setTimeout(() => {
-        const serialized = JSON.stringify({ ...state, updatedAt: new Date().toISOString() });
+        const serialized = serializeState(state);
         void saveDesktopState(serialized, isoDateLocal())
           .then((result) => setSaveError(result?.backupWarning ? `Dados salvos, mas o backup automático falhou: ${result.backupWarning}` : ""))
           .catch((error) => setSaveError(error instanceof Error ? error.message : String(error)));
