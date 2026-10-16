@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AppState } from "./types";
 
-export const CURRENT_SCHEMA_VERSION = 8;
+export const CURRENT_SCHEMA_VERSION = 9;
 // Mantemos a chave legada para preservar dados criados antes da adoção do nome Trade Blueprint.
 export const STORAGE_KEY = "plano-de-trade-data-v1";
 const STORAGE_LOAD_GUARD_KEY = "trade-blueprint-storage-load-guard";
@@ -42,7 +42,7 @@ export function storageLoadGuardMessage() {
 const attachmentSchema = z.object({
   id: z.string(),
   name: z.string().max(200),
-  dataUrl: z.string(),
+  dataUrl: z.string().optional(),
   createdAt: z.string(),
 });
 
@@ -468,8 +468,8 @@ const stateV7Schema = z.object({
   updatedAt: z.string(),
 });
 
-const stateSchema = z.object({
-  schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
+const stateV8Schema = z.object({
+  schemaVersion: z.literal(8),
   rules: z.array(ruleSchema),
   setups: z.array(setupSchema),
   plans: z.array(planSchema),
@@ -481,6 +481,89 @@ const stateSchema = z.object({
   settings: settingsSchema,
   updatedAt: z.string(),
 });
+
+const stateSchema = z.object({
+  schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
+  attachmentData: z.record(z.string(), z.string()),
+  rules: z.array(ruleSchema),
+  setups: z.array(setupSchema),
+  plans: z.array(planSchema),
+  planTemplates: z.array(planTemplateSchema),
+  journalTrades: z.array(journalTradeSchema),
+  trainingRecords: z.array(trainingRecordSchema),
+  setupExamples: z.array(setupExampleSchema),
+  studies: z.array(studySchema),
+  settings: settingsSchema,
+  updatedAt: z.string(),
+});
+
+type JsonObject = Record<string, unknown>;
+
+function isAttachmentLike(value: unknown): value is JsonObject & { id: string; name: string; createdAt: string; dataUrl?: string } {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const item = value as JsonObject;
+  return typeof item.id === "string"
+    && typeof item.name === "string"
+    && typeof item.createdAt === "string"
+    && (item.dataUrl === undefined || typeof item.dataUrl === "string");
+}
+
+function compactAttachments(value: unknown, attachmentData: Record<string, string>): unknown {
+  if (Array.isArray(value)) return value.map((item) => compactAttachments(item, attachmentData));
+  if (!value || typeof value !== "object") return value;
+
+  const source = value as JsonObject;
+  const target: JsonObject = {};
+
+  if (isAttachmentLike(source) && source.dataUrl) {
+    attachmentData[source.id] = source.dataUrl;
+  }
+
+  for (const [key, item] of Object.entries(source)) {
+    if (key === "attachmentData") continue;
+    if (key === "dataUrl" && isAttachmentLike(source)) continue;
+    target[key] = compactAttachments(item, attachmentData);
+  }
+
+  return target;
+}
+
+function hydrateAttachments(value: unknown, attachmentData: Record<string, string>): unknown {
+  if (Array.isArray(value)) return value.map((item) => hydrateAttachments(item, attachmentData));
+  if (!value || typeof value !== "object") return value;
+
+  const source = value as JsonObject;
+  const target: JsonObject = {};
+  for (const [key, item] of Object.entries(source)) {
+    if (key === "attachmentData") continue;
+    target[key] = hydrateAttachments(item, attachmentData);
+  }
+
+  if (isAttachmentLike(source)) {
+    target.dataUrl = source.dataUrl || attachmentData[source.id] || "";
+  }
+
+  return target;
+}
+
+function hydrateCurrentState(state: z.infer<typeof stateSchema>): AppState {
+  const hydrated = hydrateAttachments(state, state.attachmentData) as AppState;
+  hydrated.attachmentData = {};
+  return hydrated;
+}
+
+export function serializeState(state: AppState, pretty = false, exportedAt?: string) {
+  const attachmentData = { ...state.attachmentData };
+  const compacted = compactAttachments(state, attachmentData) as JsonObject;
+  const payload: JsonObject = {
+    ...compacted,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    attachmentData,
+    updatedAt: now(),
+  };
+  if (exportedAt) payload.exportedAt = exportedAt;
+  return JSON.stringify(payload, null, pretty ? 2 : undefined);
+}
 
 function now() {
   return new Date().toISOString();
@@ -555,6 +638,7 @@ function migratePlanV6(plan: z.infer<typeof planV6Schema>) {
 export function initialState(): AppState {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
+    attachmentData: {},
     rules: [],
     setups: [],
     plans: [],
@@ -588,7 +672,21 @@ function migrateState(data: unknown): AppState {
       const issue = current.error.issues[0];
       throw new Error(`Dados incompatíveis em ${issue.path.join(".") || "arquivo"}: ${issue.message}`);
     }
-    return current.data;
+    return hydrateCurrentState(current.data);
+  }
+
+  if (versionResult.data.schemaVersion === 8) {
+    const legacy = stateV8Schema.safeParse(data);
+    if (!legacy.success) {
+      const issue = legacy.error.issues[0];
+      throw new Error(`Backup v8 inválido em ${issue.path.join(".") || "arquivo"}: ${issue.message}`);
+    }
+    return {
+      ...legacy.data,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      attachmentData: {},
+      updatedAt: now(),
+    };
   }
 
   if (versionResult.data.schemaVersion === 7) {
@@ -600,6 +698,7 @@ function migrateState(data: unknown): AppState {
     return {
       ...legacy.data,
       schemaVersion: CURRENT_SCHEMA_VERSION,
+      attachmentData: {},
       trainingRecords: [],
       setupExamples: [],
       updatedAt: now(),
@@ -615,6 +714,7 @@ function migrateState(data: unknown): AppState {
     return {
       ...legacy.data,
       schemaVersion: CURRENT_SCHEMA_VERSION,
+      attachmentData: {},
       plans: legacy.data.plans.map(migratePlanV6),
       journalTrades: [],
       trainingRecords: [],
@@ -632,6 +732,7 @@ function migrateState(data: unknown): AppState {
     return {
       ...legacy.data,
       schemaVersion: CURRENT_SCHEMA_VERSION,
+      attachmentData: {},
       plans: legacy.data.plans.map(migratePlanV5),
       journalTrades: [],
       trainingRecords: [],
@@ -649,6 +750,7 @@ function migrateState(data: unknown): AppState {
     return {
       ...legacy.data,
       schemaVersion: CURRENT_SCHEMA_VERSION,
+      attachmentData: {},
       plans: legacy.data.plans.map(migratePlanV4),
       planTemplates: [],
       journalTrades: [],
@@ -667,6 +769,7 @@ function migrateState(data: unknown): AppState {
     return {
       ...legacy.data,
       schemaVersion: CURRENT_SCHEMA_VERSION,
+      attachmentData: {},
       plans: legacy.data.plans.map(migratePlanV4),
       planTemplates: [],
       journalTrades: [],
@@ -686,6 +789,7 @@ function migrateState(data: unknown): AppState {
     return {
       ...legacy.data,
       schemaVersion: CURRENT_SCHEMA_VERSION,
+      attachmentData: {},
       plans: legacy.data.plans.map(migratePlanV4),
       planTemplates: [],
       journalTrades: [],
@@ -705,6 +809,7 @@ function migrateState(data: unknown): AppState {
     }
     return {
       schemaVersion: CURRENT_SCHEMA_VERSION,
+      attachmentData: {},
       rules: legacy.data.rules,
       setups: [],
       plans: legacy.data.plans.map((plan) => migratePlanV4(migrateV1PlanToV4(plan))),
@@ -763,7 +868,7 @@ export function saveState(state: AppState) {
   if (guard) {
     throw new Error(guard);
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, schemaVersion: CURRENT_SCHEMA_VERSION, updatedAt: now() }));
+  localStorage.setItem(STORAGE_KEY, serializeState(state));
 }
 
 export function parseBackup(text: string): AppState {
@@ -779,7 +884,7 @@ export function parseBackup(text: string): AppState {
 export function exportBackup(state: AppState) {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const blob = new Blob([
-    JSON.stringify({ ...state, schemaVersion: CURRENT_SCHEMA_VERSION, exportedAt: now() }, null, 2),
+    serializeState(state, true, now()),
   ], { type: "application/json;charset=utf-8" });
   const href = URL.createObjectURL(blob);
   const link = document.createElement("a");
