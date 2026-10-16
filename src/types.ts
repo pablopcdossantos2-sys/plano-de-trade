@@ -240,6 +240,9 @@ export type Settings = {
 
 export type AppState = {
   schemaVersion: number;
+  // Em memória fica vazio após a hidratação; no JSON persistido contém uma cópia
+  // única de cada imagem, indexada pelo id do Attachment.
+  attachmentData: Record<string, string>;
   rules: TradeRule[];
   setups: TradeSetup[];
   plans: TradePlan[];
