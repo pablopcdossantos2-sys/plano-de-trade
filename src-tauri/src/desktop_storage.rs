@@ -370,7 +370,11 @@ pub fn create_pre_update_backup(app: &AppHandle) -> Result<Option<String>, Strin
 #[cfg(test)]
 mod tests {
     use super::{rotate_backup_kind, validate_state_json};
-    use std::{fs, path::PathBuf, time::{SystemTime, UNIX_EPOCH}};
+    use std::{
+        fs,
+        path::PathBuf,
+        time::{SystemTime, UNIX_EPOCH},
+    };
 
     fn temp_backup_dir(label: &str) -> PathBuf {
         let nanos = SystemTime::now()
@@ -411,7 +415,9 @@ mod tests {
             names.iter().filter(|name| name.contains("pre-update")).count(),
             5
         );
-        assert!(names.iter().any(|name| name == "trade-blueprint-manual-00.json"));
+        assert!(names
+            .iter()
+            .any(|name| name == "trade-blueprint-manual-00.json"));
 
         fs::remove_dir_all(directory).expect("cleanup");
     }
