@@ -75,3 +75,27 @@ export function normalizedTradeDate(value: unknown) {
 
   return "";
 }
+
+
+export function parseJournalRows(text: string): Array<Record<string, unknown>> {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+
+  if (!trimmed.startsWith("[") && !trimmed.startsWith("{")) {
+    return parseDelimitedRows(text);
+  }
+
+  const parsed = JSON.parse(trimmed) as unknown;
+  const rawRows = Array.isArray(parsed)
+    ? parsed
+    : parsed && typeof parsed === "object" && Array.isArray((parsed as { trades?: unknown[] }).trades)
+      ? (parsed as { trades: unknown[] }).trades
+      : parsed && typeof parsed === "object" && Array.isArray((parsed as { data?: unknown[] }).data)
+        ? (parsed as { data: unknown[] }).data
+        : [];
+
+  return rawRows.filter(
+    (item): item is Record<string, unknown> =>
+      !!item && typeof item === "object" && !Array.isArray(item),
+  );
+}
