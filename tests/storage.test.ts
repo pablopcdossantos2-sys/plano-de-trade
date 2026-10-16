@@ -8,6 +8,7 @@ import {
   loadStateResult,
   parseBackup,
   saveState,
+  serializeState,
 } from "../src/storage.ts";
 
 class MemoryStorage {
@@ -93,4 +94,43 @@ test("estado valido continua salvando normalmente", () => {
   const parsed = JSON.parse(saved);
   assert.equal(parsed.schemaVersion, CURRENT_SCHEMA_VERSION);
   assert.deepEqual(parsed.settings.assets, state.settings.assets);
+});
+
+
+test("schema v9 armazena a mesma imagem uma unica vez e reidrata as referencias", () => {
+  installStorage();
+  const state = initialState();
+  const attachment = {
+    id: "img-1",
+    name: "grafico.webp",
+    dataUrl: "data:image/webp;base64,AAAA",
+    createdAt: "2026-10-16T12:00:00.000Z",
+  };
+
+  state.settings.attachments = [attachment];
+  state.rules = [{
+    id: "rule-1",
+    title: "Regra",
+    category: "Risco",
+    description: "Descricao",
+    rationale: "",
+    active: true,
+    attachments: [{ ...attachment }],
+    createdAt: "2026-10-16T12:00:00.000Z",
+    updatedAt: "2026-10-16T12:00:00.000Z",
+  }];
+
+  const serialized = serializeState(state);
+  const persisted = JSON.parse(serialized);
+
+  assert.equal(persisted.schemaVersion, CURRENT_SCHEMA_VERSION);
+  assert.equal(persisted.attachmentData["img-1"], attachment.dataUrl);
+  assert.equal(persisted.settings.attachments[0].dataUrl, "");
+  assert.equal(persisted.rules[0].attachments[0].dataUrl, "");
+  assert.equal(serialized.split(attachment.dataUrl).length - 1, 1);
+
+  const hydrated = parseBackup(serialized);
+  assert.equal(hydrated.settings.attachments[0].dataUrl, attachment.dataUrl);
+  assert.equal(hydrated.rules[0].attachments[0].dataUrl, attachment.dataUrl);
+  assert.deepEqual(hydrated.attachmentData, {});
 });
