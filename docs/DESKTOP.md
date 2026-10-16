@@ -78,6 +78,8 @@ Não é necessário desinstalar manualmente a versão anterior.
 
 ## Configuração única das chaves de assinatura
 
+Para um passo a passo completo voltado a usuários pouco familiarizados com terminal/GitHub, consulte [`TUTORIAL-ASSINATURA-UPDATER-WINDOWS.md`](TUTORIAL-ASSINATURA-UPDATER-WINDOWS.md).
+
 ### Caminho recomendado no Windows
 
 Para evitar digitar manualmente o comando do Tauri, o repositório inclui:
