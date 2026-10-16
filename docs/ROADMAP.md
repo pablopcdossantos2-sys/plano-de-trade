@@ -131,3 +131,33 @@
 - [x] Exercícios baseados nos próprios erros recorrentes do trader.
 - [x] Comparação “o que pensei naquele momento” × “como interpreto agora”.
 - [x] Biblioteca pessoal de exemplos corretos e incorretos de cada setup.
+
+
+## Fase 8 — Robustez de dados e anexos
+
+### Concluído nesta auditoria
+
+- [x] Impedir sobrescrita automática após falha de leitura do armazenamento web.
+- [x] Bloquear salvamento desktop quando o estado SQLite não puder ser interpretado.
+- [x] Validar backup completo no frontend antes de restaurá-lo no SQLite.
+- [x] Exigir backup `pre-restore` bem-sucedido antes da restauração.
+- [x] Diferenciar “estado salvo” de “backup automático falhou”.
+- [x] Usar o dia local do usuário para a rotação diária de backups desktop.
+- [x] Preservar rascunhos de planos e estudos ao trocar de aba.
+- [x] Corrigir “Salvar e fechar” para não fechar um plano inválido.
+- [x] Corrigir datas brasileiras com horário na importação do diário.
+- [x] Aceitar campos CSV multilinha entre aspas.
+- [x] Corrigir métrica de aderência integral para nunca superar 100%.
+- [x] Evitar race condition entre edição de texto e compressão de anexos.
+- [x] Limpar referências a regras/setups removidos.
+- [x] Sugerir próximo dia útil em vez de sábado/domingo.
+- [x] Tornar atualização de `Cargo.lock` deliberada, não automática.
+
+### Próxima evolução estrutural
+
+- [ ] Migrar anexos para armazenamento deduplicado por ID: arquivos no desktop e IndexedDB na versão web.
+- [ ] Fazer snapshots referenciarem anexos sem duplicar a mesma imagem em base64.
+- [ ] Definir política de retenção para backups `pre-update` e `pre-restore`.
+- [ ] Substituir a tradução baseada em `MutationObserver` por internacionalização declarativa no React.
+- [ ] Revisar a galeria para abrir imagens via Blob/Object URL no WebView2.
+- [ ] Adicionar testes automatizados para importação CSV/JSON, datas, migrações e proteção contra perda de dados.
