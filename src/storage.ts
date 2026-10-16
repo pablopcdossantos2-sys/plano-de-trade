@@ -788,5 +788,5 @@ export function exportBackup(state: AppState) {
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(href);
+  window.setTimeout(() => URL.revokeObjectURL(href), 1_000);
 }
