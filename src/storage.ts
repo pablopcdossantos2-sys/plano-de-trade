@@ -543,7 +543,11 @@ function hydrateAttachments(value: unknown, attachmentData: Record<string, strin
   }
 
   if (isAttachmentLike(source)) {
-    target.dataUrl = source.dataUrl || attachmentData[source.id] || "";
+    const resolved = source.dataUrl || attachmentData[source.id];
+    if (!resolved) {
+      throw new Error(`Anexo ${source.id} está sem conteúdo de imagem no armazenamento deduplicado.`);
+    }
+    target.dataUrl = resolved;
   }
 
   return target;
