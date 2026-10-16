@@ -134,3 +134,22 @@ test("schema v9 armazena a mesma imagem uma unica vez e reidrata as referencias"
   assert.equal(hydrated.rules[0].attachments[0].dataUrl, attachment.dataUrl);
   assert.deepEqual(hydrated.attachmentData, {});
 });
+
+
+test("schema v9 rejeita referencia de imagem sem conteudo deduplicado", () => {
+  installStorage();
+  const state = initialState();
+  const serialized = JSON.parse(serializeState(state));
+  serialized.settings.attachments = [{
+    id: "img-ausente",
+    name: "ausente.webp",
+    dataUrl: "",
+    createdAt: "2026-10-16T12:00:00.000Z",
+  }];
+  serialized.attachmentData = {};
+
+  assert.throws(
+    () => parseBackup(JSON.stringify(serialized)),
+    /img-ausente|sem conteúdo de imagem/i,
+  );
+});
