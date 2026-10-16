@@ -5,3 +5,5 @@ dist/
 .DS_Store
 src-tauri/target/
 .tauri-release.conf.json
+
+*.tsbuildinfo
