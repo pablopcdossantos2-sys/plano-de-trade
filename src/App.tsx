@@ -1450,6 +1450,7 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [search, setSearch] = useState("");
+  const [galleryPreview, setGalleryPreview] = useState<GalleryItem | null>(null);
 
   const filteredPlans = useMemo(() => state.plans.filter((plan) => {
     if (asset && plan.asset !== asset) return false;
@@ -1529,19 +1530,25 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
   const gallery = useMemo(() => {
     const items: GalleryItem[] = [];
     const seen = new Set<string>();
-    const push = (attachment: Attachment, source: string, date?: string) => {
-      const key = attachment.id || attachment.dataUrl;
+    const push = (attachment: Attachment, source: string, uniqueContext: string, date?: string) => {
+      const key = `${uniqueContext}::${attachment.id || attachment.dataUrl}`;
       if (seen.has(key)) return;
       seen.add(key);
       items.push({ id: key, src: attachment.dataUrl, name: attachment.name, source, date });
     };
     state.plans.forEach((plan) => {
-      plan.attachments.forEach((attachment) => push(attachment, `Plano • ${plan.asset}`, plan.tradingDate));
-      plan.review.attachments.forEach((attachment) => push(attachment, `Revisão • ${plan.asset}`, plan.tradingDate));
+      plan.attachments.forEach((attachment) => push(attachment, `Plano • ${plan.asset}`, `plan-${plan.id}`, plan.tradingDate));
+      plan.review.attachments.forEach((attachment) => push(attachment, `Revisão • ${plan.asset}`, `review-${plan.id}`, plan.tradingDate));
+      plan.versions.forEach((version) => version.attachments.forEach((attachment) => push(
+        attachment,
+        `Plano congelado v${version.version} • ${plan.asset}`,
+        `snapshot-${plan.id}-${version.id}`,
+        plan.tradingDate,
+      )));
     });
-    state.studies.forEach((study) => study.attachments.forEach((attachment) => push(attachment, `Estudo • ${study.title}`, study.studyDate)));
-    state.setups.forEach((setup) => setup.attachments.forEach((attachment) => push(attachment, `Setup • ${setup.title}`)));
-    state.rules.forEach((rule) => rule.attachments.forEach((attachment) => push(attachment, `Regra • ${rule.title}`)));
+    state.studies.forEach((study) => study.attachments.forEach((attachment) => push(attachment, `Estudo • ${study.title}`, `study-${study.id}`, study.studyDate)));
+    state.setups.forEach((setup) => setup.attachments.forEach((attachment) => push(attachment, `Setup • ${setup.title}`, `setup-${setup.id}`)));
+    state.rules.forEach((rule) => rule.attachments.forEach((attachment) => push(attachment, `Regra • ${rule.title}`, `rule-${rule.id}`)));
     return items.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   }, [state.plans, state.studies, state.setups, state.rules]);
 
@@ -1601,8 +1608,15 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
 
     <div className="panel gallery-panel">
       <div className="history-section-title"><div><span className="eyebrow">GALERIA</span><h2>Imagens históricas</h2></div><span>{gallery.length} imagem(ns)</span></div>
-      {gallery.length ? <div className="history-gallery">{gallery.map((item) => <figure key={item.id}><a href={item.src} target="_blank" rel="noreferrer"><img src={item.src} alt={item.name} /></a><figcaption><b>{item.source}</b><span>{item.date ? fmtDate(item.date) : item.name}</span></figcaption></figure>)}</div> : <div className="empty">Ainda não existem imagens para compor a galeria histórica.</div>}
+      {gallery.length ? <div className="history-gallery">{gallery.map((item) => <figure key={item.id}><button type="button" className="gallery-preview-button" onClick={() => setGalleryPreview(item)}><img src={item.src} alt={item.name} /></button><figcaption><b>{item.source}</b><span>{item.date ? fmtDate(item.date) : item.name}</span></figcaption></figure>)}</div> : <div className="empty">Ainda não existem imagens para compor a galeria histórica.</div>}
     </div>
+
+    {galleryPreview && <div className="gallery-modal" role="dialog" aria-modal="true" aria-label={galleryPreview.name} onClick={() => setGalleryPreview(null)}>
+      <div className="gallery-modal-content" onClick={(event) => event.stopPropagation()}>
+        <div className="gallery-modal-head"><div><b>{galleryPreview.source}</b><span>{galleryPreview.date ? fmtDate(galleryPreview.date) : galleryPreview.name}</span></div><button type="button" onClick={() => setGalleryPreview(null)}>Fechar</button></div>
+        <img src={galleryPreview.src} alt={galleryPreview.name} />
+      </div>
+    </div>}
 
     <JournalIntegration state={state} setState={setState} />
   </section>;
