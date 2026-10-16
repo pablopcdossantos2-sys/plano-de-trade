@@ -1953,7 +1953,7 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
             </div>
           </> : <p className="muted-text">Você está usando a versão web. O instalador Windows baseado em Tauri possui atualização automática integrada.</p>}
         </div>
-        <h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v8 inclui planos, estudos, templates, execuções importadas, histórico estruturado, treinamento deliberado, biblioteca de setups, versões congeladas e preferência de idioma.</p>
+        <h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v9 inclui planos, estudos, templates, execuções importadas, histórico estruturado, treinamento deliberado, biblioteca de setups, versões congeladas, preferência de idioma e imagens deduplicadas por ID.</p>
         <div className="stack-actions"><button className="primary" onClick={() => exportBackup(state)}>Exportar backup JSON</button><button onClick={() => fileRef.current?.click()}>Importar backup JSON</button><input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => void importFile(e.target.files?.[0])} /></div>
         {message && <div className="notice">{message}</div>}
         <div className="danger-zone"><h3>Zona de risco</h3><p>Apaga os dados locais deste dispositivo. No aplicativo desktop, um backup de segurança é criado antes da limpeza.</p><button className="danger" onClick={() => void clearAllData()}>Apagar todos os dados</button></div>
