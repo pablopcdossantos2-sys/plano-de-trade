@@ -336,6 +336,11 @@ function latestFrozenVersion(plan: TradePlan) {
 function AttachmentField({ value, onChange, title = "Imagens", disabled = false }: { value: Attachment[]; onChange: (next: Attachment[]) => void; title?: string; disabled?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const valueRef = useRef(value);
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   async function add(files: FileList | null) {
     if (!files?.length || disabled) return;
@@ -344,7 +349,7 @@ function AttachmentField({ value, onChange, title = "Imagens", disabled = false 
     try {
       const prepared: Attachment[] = [];
       for (const file of Array.from(files)) prepared.push(await prepareImage(file));
-      onChange([...value, ...prepared]);
+      onChange([...valueRef.current, ...prepared]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Falha ao anexar imagem.");
     } finally {
@@ -1177,30 +1182,6 @@ function searchHaystack(parts: Array<string | undefined>) {
 
 function normalizeImportKey(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-function parseCsvLine(line: string, delimiter: string) {
-  const values: string[] = [];
-  let current = "";
-  let quoted = false;
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
-    if (char === '"') {
-      if (quoted && line[index + 1] === '"') {
-        current += '"';
-        index += 1;
-      } else {
-        quoted = !quoted;
-      }
-    } else if (char === delimiter && !quoted) {
-      values.push(current.trim());
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-  values.push(current.trim());
-  return values;
 }
 
 function parseDelimitedRows(text: string) {
@@ -2052,6 +2033,7 @@ export default function App() {
         if (json) {
           const loaded = parseBackup(json);
           setState(loaded);
+          setSaveError("");
           setDesktopLoadBlocked(false);
           setDesktopReady(true);
           return;
