@@ -293,40 +293,34 @@ Backups anteriores recebem arrays vazios, sem fabricar exercícios retroativos.
 - imagens em Data URL compactadas;
 - backup JSON completo.
 
-### Schema v8
+### Schema v9
 
-Mantém os recursos anteriores e adiciona:
+Mantém todos os recursos do schema v8 e adiciona deduplicação de anexos no formato persistido:
 
-- `studies: TradeStudy[]` no estado global;
-- `planTemplates: PlanTemplate[]` no estado global;
-- checklist estruturado com `id`, `text` e `checked`;
-- convicção da tese e critério para mudança de opinião;
-- score e pendências de preparação preservados nos novos snapshots;
-- revisão estruturada com origem da execução, regras violadas, qualidade da leitura e qualidade da execução;
-- `sessionId` estável por plano;
-- `journalTrades: JournalTrade[]` para execuções importadas e seus vínculos;
-- `trainingRecords: TrainingRecord[]` para Replay, revisitas e exercícios de erro;
-- `setupExamples: SetupExample[]` para biblioteca pessoal de exemplos;
-- armazenamento separado entre estudos e planos operacionais;
-- `language` continua suportando `pt-BR`, `en` e `es`;
-- migração automática de dados v1, v2 e v3;
-- estudos incluídos no backup JSON completo.
+- `attachmentData: Record<string, string>` guarda uma única cópia do Data URL por `Attachment.id`;
+- referências de anexos em regras, setups, planos, revisões, estudos e snapshots continuam contendo metadados, mas usam `dataUrl: ""` no JSON persistido;
+- ao carregar o estado, as referências são reidratadas automaticamente para a interface;
+- ao salvar ou exportar backup, os Data URLs são compactados novamente para uma única cópia;
+- snapshots congelados podem referenciar a mesma imagem sem multiplicar o base64;
+- o formato permanece autocontido: um único backup JSON continua suficiente para recuperação completa;
+- `language` continua suportando `pt-BR`, `en` e `es`.
 
-### Migração v1/v2/v3/v4/v5/v6/v7 → v8
+O schema v8 já havia consolidado estudos, templates, checklist estruturado, convicção da tese, score de preparação, revisão estruturada, `sessionId`, `journalTrades`, `trainingRecords` e `setupExamples`.
 
-- regras são preservadas;
-- planos são preservados;
-- revisões e imagens são preservadas;
+### Migração v1/v2/v3/v4/v5/v6/v7/v8 → v9
+
+- regras, planos, revisões, estudos, templates, execuções e imagens são preservados;
+- backups v8 são aceitos diretamente e passam a usar deduplicação no próximo salvamento/exportação;
 - backups v1 continuam recebendo as migrações de setups, contraprova e versionamento;
 - backups v1 e v2 recebem `language: "pt-BR"` como preferência inicial;
-- backups v1, v2 e v3 recebem `studies: []` na migração;
+- backups v1, v2 e v3 recebem `studies: []`;
 - backups v1, v2, v3 e v4 recebem `planTemplates: []`;
 - checklists antigos em texto são migrados para itens estruturados inicialmente não concluídos;
-- backups v4 recebem os novos campos de qualidade da preparação sem inventar scores históricos para snapshots antigos;
-- backups v5 recebem os novos campos históricos da revisão vazios/zero, sem inferir violações, origem ou notas;
-- backups v6 recebem `sessionId` gerado para cada plano e `journalTrades: []`, sem inventar execuções históricas;
-- backups v7 recebem `trainingRecords: []` e `setupExamples: []`, sem criar treinos retroativos;
-- planos antigos continuam como rascunho, sem snapshots retroativos inventados.
+- snapshots históricos continuam sem scores retroativos inventados;
+- backups v5 recebem os novos campos históricos da revisão vazios/zero;
+- backups v6 recebem `sessionId` e `journalTrades: []`;
+- backups v7 recebem `trainingRecords: []` e `setupExamples: []`;
+- nenhuma migração cria operações, estudos, treinos ou resultados históricos inexistentes.
 
 ## 5. Próximas métricas úteis
 
