@@ -42,7 +42,7 @@ export function storageLoadGuardMessage() {
 const attachmentSchema = z.object({
   id: z.string(),
   name: z.string().max(200),
-  dataUrl: z.string().optional(),
+  dataUrl: z.string(),
   createdAt: z.string(),
 });
 
@@ -499,13 +499,13 @@ const stateSchema = z.object({
 
 type JsonObject = Record<string, unknown>;
 
-function isAttachmentLike(value: unknown): value is JsonObject & { id: string; name: string; createdAt: string; dataUrl?: string } {
+function isAttachmentLike(value: unknown): value is JsonObject & { id: string; name: string; createdAt: string; dataUrl: string } {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const item = value as JsonObject;
   return typeof item.id === "string"
     && typeof item.name === "string"
     && typeof item.createdAt === "string"
-    && (item.dataUrl === undefined || typeof item.dataUrl === "string");
+    && typeof item.dataUrl === "string";
 }
 
 function compactAttachments(value: unknown, attachmentData: Record<string, string>): unknown {
@@ -521,7 +521,10 @@ function compactAttachments(value: unknown, attachmentData: Record<string, strin
 
   for (const [key, item] of Object.entries(source)) {
     if (key === "attachmentData") continue;
-    if (key === "dataUrl" && isAttachmentLike(source)) continue;
+    if (key === "dataUrl" && isAttachmentLike(source)) {
+      target[key] = "";
+      continue;
+    }
     target[key] = compactAttachments(item, attachmentData);
   }
 
