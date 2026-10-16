@@ -159,5 +159,5 @@
 - [x] Fazer snapshots referenciarem anexos sem duplicar a mesma imagem em base64 no JSON persistido (schema v9 + `attachmentData`).
 - [x] Definir política de retenção para backups `pre-update` e `pre-restore`: manter as 5 cópias mais recentes de cada tipo, sem rotacionar backups manuais.
 - [ ] Substituir a tradução baseada em `MutationObserver` por internacionalização declarativa no React.
-- [ ] Revisar a galeria para abrir imagens via Blob/Object URL no WebView2.
+- [x] Revisar a galeria para abrir imagens via Blob/Object URL no WebView2, com revogação automática ao fechar a visualização.
 - [x] Adicionar testes automatizados para importação CSV/JSON, datas, migrações, deduplicação de imagens, retenção de backups e proteção contra perda de dados.
