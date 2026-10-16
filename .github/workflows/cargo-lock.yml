@@ -9,7 +9,7 @@ on:
       - ".github/workflows/cargo-lock.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   lockfile:
@@ -23,6 +23,21 @@ jobs:
 
       - name: Generate Cargo.lock
         run: cargo generate-lockfile --manifest-path src-tauri/Cargo.toml
+
+      - name: Commit Cargo.lock when changed
+        shell: bash
+        run: |
+          git add src-tauri/Cargo.lock
+
+          if git diff --cached --quiet; then
+            echo "Cargo.lock is already up to date."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: atualizar Cargo.lock"
+          git push origin HEAD:main
 
       - name: Upload Cargo.lock
         uses: actions/upload-artifact@v4
