@@ -78,6 +78,39 @@ Não é necessário desinstalar manualmente a versão anterior.
 
 ## Configuração única das chaves de assinatura
 
+### Caminho recomendado no Windows
+
+Para evitar digitar manualmente o comando do Tauri, o repositório inclui:
+
+```text
+scripts/setup-updater-signing.ps1
+```
+
+Passo a passo:
+
+1. abra a pasta do projeto no Explorador de Arquivos;
+2. clique com o botão direito em `scripts/setup-updater-signing.ps1`;
+3. escolha **Executar com PowerShell**; se o Windows bloquear scripts locais, abra PowerShell na pasta do projeto e execute:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\scripts\setup-updater-signing.ps1
+   ```
+
+4. o script instala as dependências, se necessário, e gera as chaves em `%USERPROFILE%\.tauri\trade-blueprint.key`;
+5. copie o conteúdo da **chave pública** exibida pelo script;
+6. no GitHub, abra **Settings > Secrets and variables > Actions**;
+7. em **Variables**, crie `TAURI_UPDATER_PUBLIC_KEY`;
+8. em **Secrets**, crie `TAURI_SIGNING_PRIVATE_KEY` com o conteúdo completo do arquivo privado;
+9. se a chave possuir senha, crie também `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`;
+10. execute o workflow **Signed Release Readiness**;
+11. só publique a Release quando esse workflow estiver verde.
+
+> A chave privada nunca deve ser adicionada ao Git, ao README, a issues ou a mensagens de chat. O script apenas a grava no computador do usuário.
+
+### Caminho manual
+
+
+
 As atualizações do Tauri precisam ser assinadas. Gere um par de chaves uma única vez.
 
 Exemplo:
