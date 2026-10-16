@@ -11,7 +11,7 @@
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build --bundles nsis",
-    "desktop:check": "cargo check --manifest-path src-tauri/Cargo.toml"
+    "desktop:check": "cargo check --locked --manifest-path src-tauri/Cargo.toml"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.4",
