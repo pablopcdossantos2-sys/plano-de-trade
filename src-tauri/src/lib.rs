@@ -6,7 +6,6 @@ use tauri::Manager;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.show();
@@ -14,6 +13,7 @@ pub fn run() {
                 let _ = window.set_focus();
             }
         }))
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             #[cfg(desktop)]
             if updates::plugin_enabled() {
@@ -28,6 +28,7 @@ pub fn run() {
             desktop_storage::get_backup_directory,
             desktop_storage::set_backup_directory,
             desktop_storage::create_desktop_backup,
+            desktop_storage::preview_desktop_backup,
             desktop_storage::restore_desktop_backup,
             desktop_storage::check_desktop_integrity,
             updates::app_version,
