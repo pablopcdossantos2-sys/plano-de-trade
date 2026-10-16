@@ -75,9 +75,7 @@ pub async fn install_update(app: AppHandle, expected_version: String) -> Result<
     };
 
     if update.version != expected_version {
-        return Err(
-            "A versão disponível mudou. Verifique as atualizações novamente.".to_string(),
-        );
+        return Err("A versão disponível mudou. Verifique as atualizações novamente.".to_string());
     }
 
     crate::desktop_storage::create_pre_update_backup(&app)
