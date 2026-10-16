@@ -12,6 +12,7 @@ use tauri::{AppHandle, Manager};
 const DB_FILE: &str = "plano-de-trade.sqlite3";
 const DEFAULT_BACKUP_FOLDER: &str = "backups";
 const AUTO_BACKUP_LIMIT: usize = 10;
+const SAFETY_BACKUP_LIMIT: usize = 5;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -155,7 +156,9 @@ fn write_backup_file(
     write_raw_backup_file(app, connection, state_json, kind)
 }
 
-fn rotate_automatic_backups(directory: &Path) -> Result<(), String> {
+fn rotate_backup_kind(directory: &Path, kind: &str, limit: usize) -> Result<(), String> {
+    let current_prefix = format!("trade-blueprint-{kind}-");
+    let legacy_prefix = format!("plano-de-trade-{kind}-");
     let mut files: Vec<PathBuf> = fs::read_dir(directory)
         .map_err(|error| format!("Não foi possível listar os backups: {error}"))?
         .filter_map(Result::ok)
@@ -164,18 +167,23 @@ fn rotate_automatic_backups(directory: &Path) -> Result<(), String> {
             path.file_name()
                 .and_then(|name| name.to_str())
                 .map(|name| {
-                    (name.starts_with("trade-blueprint-auto-")
-                        || name.starts_with("plano-de-trade-auto-"))
+                    (name.starts_with(&current_prefix) || name.starts_with(&legacy_prefix))
                         && name.ends_with(".json")
                 })
                 .unwrap_or(false)
         })
         .collect();
+
     files.sort();
-    if files.len() > AUTO_BACKUP_LIMIT {
-        let remove_count = files.len() - AUTO_BACKUP_LIMIT;
+    if files.len() > limit {
+        let remove_count = files.len() - limit;
         for path in files.into_iter().take(remove_count) {
-            let _ = fs::remove_file(path);
+            fs::remove_file(&path).map_err(|error| {
+                format!(
+                    "Não foi possível remover o backup antigo {}: {error}",
+                    path.to_string_lossy()
+                )
+            })?;
         }
     }
     Ok(())
@@ -205,7 +213,7 @@ fn maybe_create_automatic_backup(
 
     write_backup_file(app, connection, state_json, "auto")?;
     let directory = backup_directory_internal(app, connection)?;
-    rotate_automatic_backups(&directory)?;
+    rotate_backup_kind(&directory, "auto", AUTO_BACKUP_LIMIT)?;
     set_config(connection, "last_auto_backup_day", &current_marker)?;
     Ok(())
 }
@@ -313,6 +321,8 @@ pub fn restore_desktop_backup(app: AppHandle, path: String) -> Result<String, St
 
     if let Some(current) = load_state_from_connection(&connection)? {
         write_raw_backup_file(&app, &connection, &current, "pre-restore")?;
+        let directory = backup_directory_internal(&app, &connection)?;
+        rotate_backup_kind(&directory, "pre-restore", SAFETY_BACKUP_LIMIT)?;
     }
 
     let _ = save_state_internal(&app, &connection, &incoming, false, None)?;
@@ -351,12 +361,60 @@ pub fn create_pre_update_backup(app: &AppHandle) -> Result<Option<String>, Strin
     let Some(state) = load_state_from_connection(&connection)? else {
         return Ok(None);
     };
-    write_backup_file(app, &connection, &state, "pre-update").map(Some)
+    let path = write_backup_file(app, &connection, &state, "pre-update")?;
+    let directory = backup_directory_internal(app, &connection)?;
+    rotate_backup_kind(&directory, "pre-update", SAFETY_BACKUP_LIMIT)?;
+    Ok(Some(path))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::validate_state_json;
+    use super::{rotate_backup_kind, validate_state_json};
+    use std::{fs, path::PathBuf, time::{SystemTime, UNIX_EPOCH}};
+
+    fn temp_backup_dir(label: &str) -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!(
+            "trade-blueprint-{label}-{}-{nanos}",
+            std::process::id()
+        ));
+        fs::create_dir_all(&path).expect("create temp dir");
+        path
+    }
+
+    #[test]
+    fn rotates_only_the_requested_backup_kind() {
+        let directory = temp_backup_dir("rotation");
+
+        for index in 0..7 {
+            fs::write(
+                directory.join(format!("trade-blueprint-pre-update-{index:02}.json")),
+                b"{}",
+            )
+            .expect("write pre-update");
+        }
+        fs::write(directory.join("trade-blueprint-manual-00.json"), b"{}")
+            .expect("write manual");
+
+        rotate_backup_kind(&directory, "pre-update", 5).expect("rotate");
+
+        let names: Vec<String> = fs::read_dir(&directory)
+            .expect("read dir")
+            .filter_map(Result::ok)
+            .filter_map(|entry| entry.file_name().to_str().map(str::to_string))
+            .collect();
+
+        assert_eq!(
+            names.iter().filter(|name| name.contains("pre-update")).count(),
+            5
+        );
+        assert!(names.iter().any(|name| name == "trade-blueprint-manual-00.json"));
+
+        fs::remove_dir_all(directory).expect("cleanup");
+    }
 
     #[test]
     fn validates_schema_version() {
