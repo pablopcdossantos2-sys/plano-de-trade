@@ -4,6 +4,40 @@ import type { AppState } from "./types";
 export const CURRENT_SCHEMA_VERSION = 8;
 // Mantemos a chave legada para preservar dados criados antes da adoção do nome Trade Blueprint.
 export const STORAGE_KEY = "plano-de-trade-data-v1";
+const STORAGE_LOAD_GUARD_KEY = "trade-blueprint-storage-load-guard";
+
+export type StateLoadResult = {
+  state: AppState;
+  error?: string;
+  recoveryKey?: string;
+};
+
+function setStorageLoadGuard(message: string, recoveryKey?: string) {
+  try {
+    localStorage.setItem(STORAGE_LOAD_GUARD_KEY, JSON.stringify({ message, recoveryKey, createdAt: now() }));
+  } catch {
+    // If storage itself is unavailable, saveState will still surface the write failure.
+  }
+}
+
+export function clearStorageLoadGuard() {
+  try {
+    localStorage.removeItem(STORAGE_LOAD_GUARD_KEY);
+  } catch {
+    // Nothing else to do.
+  }
+}
+
+export function storageLoadGuardMessage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_LOAD_GUARD_KEY);
+    if (!raw) return "";
+    const parsed = JSON.parse(raw) as { message?: unknown };
+    return typeof parsed.message === "string" ? parsed.message : "O armazenamento local está em modo protegido.";
+  } catch {
+    return "O armazenamento local está em modo protegido.";
+  }
+}
 
 const attachmentSchema = z.object({
   id: z.string(),
@@ -687,17 +721,48 @@ function migrateState(data: unknown): AppState {
   throw new Error(`Versão de backup não suportada: ${versionResult.data.schemaVersion}.`);
 }
 
-export function loadState(): AppState {
+export function loadStateResult(): StateLoadResult {
   const saved = localStorage.getItem(STORAGE_KEY);
-  if (!saved) return initialState();
+  if (!saved) {
+    clearStorageLoadGuard();
+    return { state: initialState() };
+  }
+
   try {
-    return migrateState(JSON.parse(saved) as unknown);
-  } catch {
-    return initialState();
+    const state = migrateState(JSON.parse(saved) as unknown);
+    clearStorageLoadGuard();
+    return { state };
+  } catch (error) {
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const recoveryKey = `trade-blueprint-corrompido-${stamp}`;
+    let preserved = false;
+
+    try {
+      localStorage.setItem(recoveryKey, saved);
+      preserved = true;
+    } catch {
+      // The original key remains untouched even if there is no quota for a recovery copy.
+    }
+
+    const reason = error instanceof Error ? error.message : String(error);
+    const message = preserved
+      ? `Os dados locais não puderam ser lidos e NÃO serão sobrescritos. Uma cópia bruta foi preservada em ${recoveryKey}. Motivo: ${reason}`
+      : `Os dados locais não puderam ser lidos e NÃO serão sobrescritos. O conteúdo original permanece na chave principal, mas não houve espaço para criar uma cópia adicional. Motivo: ${reason}`;
+
+    setStorageLoadGuard(message, preserved ? recoveryKey : undefined);
+    return { state: initialState(), error: message, recoveryKey: preserved ? recoveryKey : undefined };
   }
 }
 
+export function loadState(): AppState {
+  return loadStateResult().state;
+}
+
 export function saveState(state: AppState) {
+  const guard = storageLoadGuardMessage();
+  if (guard) {
+    throw new Error(guard);
+  }
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, schemaVersion: CURRENT_SCHEMA_VERSION, updatedAt: now() }));
 }
 
