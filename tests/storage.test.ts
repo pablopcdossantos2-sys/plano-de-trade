@@ -153,3 +153,30 @@ test("schema v9 rejeita referencia de imagem sem conteudo deduplicado", () => {
     /img-ausente|sem conteúdo de imagem/i,
   );
 });
+
+
+test("migra schema v8 para v9 preservando imagens embutidas", () => {
+  installStorage();
+  const state = initialState();
+  const attachment = {
+    id: "img-v8",
+    name: "legado.webp",
+    dataUrl: "data:image/webp;base64,VVVV",
+    createdAt: "2026-10-16T12:00:00.000Z",
+  };
+  state.settings.attachments = [attachment];
+
+  const legacy = {
+    ...state,
+    schemaVersion: 8,
+  };
+  delete legacy.attachmentData;
+
+  const migrated = parseBackup(JSON.stringify(legacy));
+  assert.equal(migrated.schemaVersion, CURRENT_SCHEMA_VERSION);
+  assert.equal(migrated.settings.attachments[0].dataUrl, attachment.dataUrl);
+
+  const persistedV9 = JSON.parse(serializeState(migrated));
+  assert.equal(persistedV9.settings.attachments[0].dataUrl, "");
+  assert.equal(persistedV9.attachmentData["img-v8"], attachment.dataUrl);
+});
