@@ -2,6 +2,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 use serde_json::Value;
 use std::{
+    collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
@@ -11,6 +12,7 @@ use tauri::{AppHandle, Manager};
 // Nome legado preservado para manter o mesmo banco após o rebranding.
 const DB_FILE: &str = "plano-de-trade.sqlite3";
 const DEFAULT_BACKUP_FOLDER: &str = "backups";
+const ATTACHMENT_FOLDER: &str = "attachments";
 const AUTO_BACKUP_LIMIT: usize = 10;
 const SAFETY_BACKUP_LIMIT: usize = 5;
 
@@ -49,6 +51,184 @@ fn app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
 
 fn db_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(app_data_dir(app)?.join(DB_FILE))
+}
+
+fn attachment_directory(app: &AppHandle) -> Result<PathBuf, String> {
+    let directory = app_data_dir(app)?.join(ATTACHMENT_FOLDER);
+    fs::create_dir_all(&directory)
+        .map_err(|error| format!("Não foi possível criar a pasta de anexos: {error}"))?;
+    Ok(directory)
+}
+
+fn attachment_file_name(id: &str) -> String {
+    let mut encoded = String::with_capacity(id.len() * 2 + 8);
+    for byte in id.as_bytes() {
+        encoded.push_str(&format!("{byte:02x}"));
+    }
+    format!("{encoded}.dataurl")
+}
+
+fn attachment_path(app: &AppHandle, id: &str) -> Result<PathBuf, String> {
+    Ok(attachment_directory(app)?.join(attachment_file_name(id)))
+}
+
+fn is_attachment_object(object: &serde_json::Map<String, Value>) -> bool {
+    ["id", "name", "dataUrl", "createdAt"]
+        .iter()
+        .all(|key| object.get(*key).and_then(Value::as_str).is_some())
+}
+
+fn collect_attachment_ids(value: &Value, ids: &mut BTreeSet<String>) {
+    match value {
+        Value::Array(items) => {
+            for item in items {
+                collect_attachment_ids(item, ids);
+            }
+        }
+        Value::Object(object) => {
+            if is_attachment_object(object) {
+                if let Some(id) = object.get("id").and_then(Value::as_str) {
+                    ids.insert(id.to_string());
+                }
+            }
+            for item in object.values() {
+                collect_attachment_ids(item, ids);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn write_attachment_if_missing(app: &AppHandle, id: &str, data_url: &str) -> Result<(), String> {
+    let path = attachment_path(app, id)?;
+    if path.exists() {
+        return Ok(());
+    }
+    fs::write(&path, data_url.as_bytes()).map_err(|error| {
+        format!(
+            "Não foi possível salvar o anexo {}: {error}",
+            path.to_string_lossy()
+        )
+    })
+}
+
+fn externalize_attachment_data(
+    app: &AppHandle,
+    state_json: &str,
+) -> Result<(String, BTreeSet<String>), String> {
+    let mut value: Value = serde_json::from_str(state_json)
+        .map_err(|error| format!("Estado JSON inválido: {error}"))?;
+    let mut ids = BTreeSet::new();
+    collect_attachment_ids(&value, &mut ids);
+
+    if value.get("attachmentData").is_none() {
+        return Ok((state_json.to_string(), ids));
+    }
+
+    let entries: Vec<(String, String)> = value
+        .get("attachmentData")
+        .and_then(Value::as_object)
+        .map(|data| {
+            data.iter()
+                .filter_map(|(id, value)| value.as_str().filter(|item| !item.is_empty()).map(|item| (id.clone(), item.to_string())))
+                .collect()
+        })
+        .unwrap_or_default();
+
+    for (id, data_url) in &entries {
+        write_attachment_if_missing(app, id, data_url)?;
+    }
+
+    for id in &ids {
+        if !attachment_path(app, id)?.exists() {
+            return Err(format!(
+                "O estado referencia o anexo {id}, mas o arquivo correspondente não está disponível."
+            ));
+        }
+    }
+
+    let root = value
+        .as_object_mut()
+        .ok_or_else(|| "O estado principal deve ser um objeto JSON.".to_string())?;
+    root.insert(
+        "attachmentData".to_string(),
+        Value::Object(serde_json::Map::new()),
+    );
+
+    serde_json::to_string(&value)
+        .map(|json| (json, ids))
+        .map_err(|error| format!("Não foi possível serializar o estado sem anexos embutidos: {error}"))
+}
+
+fn hydrate_attachment_data(app: &AppHandle, state_json: &str) -> Result<String, String> {
+    let mut value: Value = serde_json::from_str(state_json)
+        .map_err(|error| format!("Estado JSON inválido: {error}"))?;
+    let mut ids = BTreeSet::new();
+    collect_attachment_ids(&value, &mut ids);
+    if ids.is_empty() {
+        return Ok(state_json.to_string());
+    }
+
+    let root = value
+        .as_object_mut()
+        .ok_or_else(|| "O estado principal deve ser um objeto JSON.".to_string())?;
+    let entry = root
+        .entry("attachmentData".to_string())
+        .or_insert_with(|| Value::Object(serde_json::Map::new()));
+    if !entry.is_object() {
+        *entry = Value::Object(serde_json::Map::new());
+    }
+    let data = entry
+        .as_object_mut()
+        .ok_or_else(|| "attachmentData inválido.".to_string())?;
+
+    for id in ids {
+        let already_embedded = data
+            .get(&id)
+            .and_then(Value::as_str)
+            .map(|value| !value.is_empty())
+            .unwrap_or(false);
+        if already_embedded {
+            continue;
+        }
+
+        let path = attachment_path(app, &id)?;
+        let data_url = fs::read_to_string(&path).map_err(|error| {
+            format!(
+                "Não foi possível ler o arquivo do anexo {}: {error}",
+                path.to_string_lossy()
+            )
+        })?;
+        data.insert(id, Value::String(data_url));
+    }
+
+    serde_json::to_string(&value)
+        .map_err(|error| format!("Não foi possível reidratar os anexos do estado: {error}"))
+}
+
+fn cleanup_attachment_files(app: &AppHandle, keep: &BTreeSet<String>) -> Result<(), String> {
+    let directory = attachment_directory(app)?;
+    let keep_names: BTreeSet<String> = keep.iter().map(|id| attachment_file_name(id)).collect();
+
+    for entry in fs::read_dir(&directory)
+        .map_err(|error| format!("Não foi possível listar a pasta de anexos: {error}"))?
+    {
+        let entry = entry.map_err(|error| format!("Não foi possível ler um anexo: {error}"))?;
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.ends_with(".dataurl") && !keep_names.contains(&name) {
+            fs::remove_file(&path).map_err(|error| {
+                format!(
+                    "Não foi possível remover o anexo órfão {}: {error}",
+                    path.to_string_lossy()
+                )
+            })?;
+        }
+    }
+    Ok(())
 }
 
 fn open_db(app: &AppHandle) -> Result<Connection, String> {
@@ -226,14 +406,17 @@ fn save_state_internal(
     local_day: Option<&str>,
 ) -> Result<Option<String>, String> {
     validate_state_json(state_json)?;
+    let (stored_json, attachment_ids) = externalize_attachment_data(app, state_json)?;
     let stamp = timestamp()?;
     connection
         .execute(
             "INSERT INTO app_state(id, json, updated_at) VALUES(1, ?1, ?2)
              ON CONFLICT(id) DO UPDATE SET json = excluded.json, updated_at = excluded.updated_at",
-            params![state_json, stamp as i64],
+            params![stored_json, stamp as i64],
         )
         .map_err(|error| format!("Não foi possível salvar o estado no SQLite: {error}"))?;
+
+    let _ = cleanup_attachment_files(app, &attachment_ids);
 
     let backup_warning = if make_auto_backup {
         maybe_create_automatic_backup(app, connection, state_json, local_day).err()
@@ -246,7 +429,10 @@ fn save_state_internal(
 #[tauri::command]
 pub fn load_desktop_state(app: AppHandle) -> Result<Option<String>, String> {
     let connection = open_db(&app)?;
-    load_state_from_connection(&connection)
+    match load_state_from_connection(&connection)? {
+        Some(json) => hydrate_attachment_data(&app, &json).map(Some),
+        None => Ok(None),
+    }
 }
 
 #[tauri::command]
@@ -299,8 +485,9 @@ pub fn set_backup_directory(app: AppHandle, path: String) -> Result<String, Stri
 #[tauri::command]
 pub fn create_desktop_backup(app: AppHandle) -> Result<String, String> {
     let connection = open_db(&app)?;
-    let state = load_state_from_connection(&connection)?
+    let stored = load_state_from_connection(&connection)?
         .ok_or_else(|| "Ainda não existe estado salvo no banco desktop.".to_string())?;
+    let state = hydrate_attachment_data(&app, &stored)?;
     write_backup_file(&app, &connection, &state, "manual")
 }
 
@@ -320,7 +507,8 @@ pub fn restore_desktop_backup(app: AppHandle, path: String) -> Result<String, St
     validate_state_json(&incoming)?;
 
     if let Some(current) = load_state_from_connection(&connection)? {
-        write_raw_backup_file(&app, &connection, &current, "pre-restore")?;
+        let hydrated = hydrate_attachment_data(&app, &current)?;
+        write_raw_backup_file(&app, &connection, &hydrated, "pre-restore")?;
         let directory = backup_directory_internal(&app, &connection)?;
         rotate_backup_kind(&directory, "pre-restore", SAFETY_BACKUP_LIMIT)?;
     }
@@ -338,7 +526,8 @@ pub fn check_desktop_integrity(app: AppHandle) -> Result<IntegrityInfo, String> 
 
     let state = load_state_from_connection(&connection)?;
     if let Some(json) = state.as_deref() {
-        validate_state_json(json)?;
+        let hydrated = hydrate_attachment_data(&app, json)?;
+        validate_state_json(&hydrated)?;
     }
 
     let ok = quick_check.eq_ignore_ascii_case("ok");
@@ -358,9 +547,10 @@ pub fn check_desktop_integrity(app: AppHandle) -> Result<IntegrityInfo, String> 
 
 pub fn create_pre_update_backup(app: &AppHandle) -> Result<Option<String>, String> {
     let connection = open_db(app)?;
-    let Some(state) = load_state_from_connection(&connection)? else {
+    let Some(stored) = load_state_from_connection(&connection)? else {
         return Ok(None);
     };
+    let state = hydrate_attachment_data(app, &stored)?;
     let path = write_backup_file(app, &connection, &state, "pre-update")?;
     let directory = backup_directory_internal(app, &connection)?;
     rotate_backup_kind(&directory, "pre-update", SAFETY_BACKUP_LIMIT)?;
@@ -369,7 +559,7 @@ pub fn create_pre_update_backup(app: &AppHandle) -> Result<Option<String>, Strin
 
 #[cfg(test)]
 mod tests {
-    use super::{rotate_backup_kind, validate_state_json};
+    use super::{attachment_file_name, collect_attachment_ids, rotate_backup_kind, validate_state_json};
     use std::{
         fs,
         path::PathBuf,
@@ -420,6 +610,34 @@ mod tests {
             .any(|name| name == "trade-blueprint-manual-00.json"));
 
         fs::remove_dir_all(directory).expect("cleanup");
+    }
+
+    #[test]
+    fn attachment_file_name_is_path_safe_and_stable() {
+        assert_eq!(
+            attachment_file_name("img-1"),
+            "696d672d31.dataurl"
+        );
+        assert!(!attachment_file_name("../unsafe").contains('/'));
+        assert!(!attachment_file_name("../unsafe").contains('\\'));
+    }
+
+    #[test]
+    fn collects_only_attachment_like_ids() {
+        let value: serde_json::Value = serde_json::json!({
+            "id": "root",
+            "attachments": [
+                {
+                    "id": "img-1",
+                    "name": "grafico.webp",
+                    "dataUrl": "",
+                    "createdAt": "2026-10-16T12:00:00.000Z"
+                }
+            ]
+        });
+        let mut ids = std::collections::BTreeSet::new();
+        collect_attachment_ids(&value, &mut ids);
+        assert_eq!(ids.into_iter().collect::<Vec<_>>(), vec!["img-1".to_string()]);
     }
 
     #[test]

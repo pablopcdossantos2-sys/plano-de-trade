@@ -190,7 +190,7 @@ O instalador gerado por builds comuns é disponibilizado como artifact do GitHub
 
 No aplicativo instalado, **SQLite é o armazenamento principal**.
 
-O banco fica na pasta de dados da aplicação e armazena o estado versionado completo em JSON dentro do SQLite. Essa estratégia preserva as migrações de schema existentes e remove a limitação prática de capacidade do `localStorage`.
+O banco fica na pasta de dados da aplicação e armazena no SQLite o estado versionado e os metadados. A partir do schema v9, o conteúdo binário dos anexos é externalizado para arquivos individuais na subpasta `attachments`, deduplicados pelo ID lógico da imagem. Essa estratégia preserva as migrações existentes, reduz o tamanho do estado principal e remove a limitação prática de capacidade do `localStorage`.
 
 ### Migração para o SQLite
 
@@ -245,9 +245,9 @@ Antes de substituir os dados atuais, o backend cria automaticamente um backup `p
 
 ### Imagens
 
-Como o desktop não depende mais do limite do `localStorage`, planos, estudos, regras e setups podem armazenar um volume maior de imagens compactadas.
+Planos, estudos, regras e setups podem armazenar um volume maior de imagens compactadas porque o conteúdo das imagens não fica duplicado dentro do estado salvo no SQLite. Cada anexo é mantido como arquivo próprio na pasta `attachments` da área de dados da aplicação.
 
-A estrutura de anexos continua compatível com os backups JSON atuais.
+Ao carregar o aplicativo, o backend reidrata as referências automaticamente. Backups manuais, automáticos, `pre-update` e `pre-restore` continuam sendo JSON autocontido: antes de gravá-los, o backend recoloca os dados dos anexos no `attachmentData` do schema v9. Assim, um backup pode ser levado para outra instalação sem copiar separadamente a pasta de anexos.
 
 ## Release assinada ainda pendente
 

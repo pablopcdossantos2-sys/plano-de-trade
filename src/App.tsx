@@ -1,8 +1,10 @@
+/** @jsxImportSource ./i18nRuntime */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { prepareImage } from "./images";
+import { clearWebAttachmentStore, loadWebStatePayload, saveWebStateExternalized } from "./attachmentStore";
 import { normalizedTradeDate, parseJournalRows } from "./journalImport";
-import { clearStorageLoadGuard, exportBackup, initialState, loadStateResult, parseBackup, saveState, serializeState, STORAGE_KEY } from "./storage";
-import { localeForLanguage, translateUi, useInterfaceLanguage, type UiLanguage } from "./i18n";
+import { clearStorageLoadGuard, exportBackup, initialState, loadStateResult, parseBackup, serializeState, STORAGE_KEY } from "./storage";
+import { localeForLanguage, setInterfaceLanguage, translateUi, type UiLanguage } from "./i18n";
 import {
   checkDesktopIntegrity,
   checkDesktopUpdate,
@@ -1918,6 +1920,7 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
         setDesktopStorageMessage(`Backup de segurança criado em: ${path}`);
       }
       localStorage.removeItem(STORAGE_KEY);
+      if (!isDesktopApp()) await clearWebAttachmentStore();
       clearStorageLoadGuard();
       const fresh = initialState();
       setState(fresh);
@@ -1970,7 +1973,7 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
             </div>
           </> : <p className="muted-text">Você está usando a versão web. O instalador Windows baseado em Tauri possui atualização automática integrada.</p>}
         </div>
-        <h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v9 inclui planos, estudos, templates, execuções importadas, histórico estruturado, treinamento deliberado, biblioteca de setups, versões congeladas, preferência de idioma e imagens deduplicadas por ID.</p>
+        <h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v9 inclui planos, estudos, templates, execuções importadas, histórico estruturado, treinamento deliberado, biblioteca de setups, versões congeladas, preferência de idioma e imagens deduplicadas por ID. No uso normal, os binários ficam fora do estado principal: em arquivos no desktop e no IndexedDB na web.</p>
         <div className="stack-actions"><button className="primary" onClick={() => exportBackup(state)}>Exportar backup JSON</button><button onClick={() => fileRef.current?.click()}>Importar backup JSON</button><input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => void importFile(e.target.files?.[0])} /></div>
         {message && <div className="notice">{message}</div>}
         <div className="danger-zone"><h3>Zona de risco</h3><p>Apaga os dados locais deste dispositivo. No aplicativo desktop, um backup de segurança é criado antes da limpeza.</p><button className="danger" onClick={() => void clearAllData()}>Apagar todos os dados</button></div>
@@ -1980,19 +1983,57 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
 }
 
 export default function App() {
-  const [startupLoad] = useState(() => loadStateResult());
+  const desktop = isDesktopApp();
+  const [startupLoad] = useState(() => desktop ? loadStateResult() : { state: initialState() });
   const [state, setState] = useState<AppState>(() => startupLoad.state);
   const [tab, setTab] = useState<Tab>("dashboard");
-  const [saveError, setSaveError] = useState(startupLoad.error ?? "");
-  const [desktopReady, setDesktopReady] = useState(() => !isDesktopApp());
+  const [saveError, setSaveError] = useState(desktop ? startupLoad.error ?? "" : "");
+  const [desktopReady, setDesktopReady] = useState(() => !desktop);
   const [desktopLoadBlocked, setDesktopLoadBlocked] = useState(false);
+  const [webReady, setWebReady] = useState(() => desktop);
+  const [webLoadBlocked, setWebLoadBlocked] = useState(false);
 
   activeLanguage = state.settings.language;
   activeLocale = localeForLanguage(activeLanguage);
-  useInterfaceLanguage(activeLanguage);
+  setInterfaceLanguage(activeLanguage);
 
   useEffect(() => {
-    if (!isDesktopApp()) return;
+    if (desktop) return;
+    let active = true;
+
+    void loadWebStatePayload()
+      .then((json) => {
+        if (!active) return;
+        if (!json) {
+          clearStorageLoadGuard();
+          setState(initialState());
+          setSaveError("");
+          setWebLoadBlocked(false);
+          setWebReady(true);
+          return;
+        }
+
+        const loaded = parseBackup(json);
+        clearStorageLoadGuard();
+        setState(loaded);
+        setSaveError("");
+        setWebLoadBlocked(false);
+        setWebReady(true);
+      })
+      .catch((error) => {
+        if (!active) return;
+        const fallback = loadStateResult();
+        setState(fallback.state);
+        setWebLoadBlocked(true);
+        setWebReady(false);
+        setSaveError(`Modo protegido: os dados web não foram sobrescritos. ${error instanceof Error ? error.message : String(error)}`);
+      });
+
+    return () => { active = false; };
+  }, [desktop]);
+
+  useEffect(() => {
+    if (!desktop) return;
     let active = true;
     void loadDesktopState()
       .then(async (json) => {
@@ -2027,12 +2068,12 @@ export default function App() {
         setSaveError(`Modo protegido: os dados desktop não foram sobrescritos. ${error instanceof Error ? error.message : String(error)}`);
       });
     return () => { active = false; };
-  }, [startupLoad]);
+  }, [startupLoad, desktop]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = state.settings.theme;
 
-    if (isDesktopApp()) {
+    if (desktop) {
       if (!desktopReady || desktopLoadBlocked) return;
       const timer = window.setTimeout(() => {
         const serialized = serializeState(state);
@@ -2043,13 +2084,17 @@ export default function App() {
       return () => window.clearTimeout(timer);
     }
 
-    try {
-      saveState(state);
-      setSaveError("");
-    } catch {
-      setSaveError("O navegador não conseguiu salvar os dados. Exporte um backup e reduza a quantidade de imagens.");
-    }
-  }, [state, desktopReady, desktopLoadBlocked]);
+    if (!webReady || webLoadBlocked) return;
+    const timer = window.setTimeout(() => {
+      const serialized = serializeState(state);
+      void saveWebStateExternalized(serialized)
+        .then(() => setSaveError(""))
+        .catch((error) => setSaveError(error instanceof Error
+          ? error.message
+          : "O navegador não conseguiu salvar os dados. Exporte um backup antes de continuar."));
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [state, desktopReady, desktopLoadBlocked, webReady, webLoadBlocked, desktop]);
 
   const nav: Array<[Tab, string, string]> = [
     ["dashboard", "Visão geral", "⌂"],
@@ -2070,7 +2115,7 @@ export default function App() {
     </aside>
     <main>
       <header><div><span className="mobile-title">Trade Blueprint</span></div><div className="save-state"><span className={saveError ? "bad" : "good"}></span>{saveError || "Salvamento local automático"}</div></header>
-      {saveError && (startupLoad.error || desktopLoadBlocked) && <div className="storage-protection-banner"><div><b>Modo protegido de armazenamento</b><span>{saveError}</span></div><button onClick={() => setTab("settings")}>Abrir recuperação</button></div>}
+      {saveError && (startupLoad.error || desktopLoadBlocked || webLoadBlocked) && <div className="storage-protection-banner"><div><b>Modo protegido de armazenamento</b><span>{saveError}</span></div><button onClick={() => setTab("settings")}>Abrir recuperação</button></div>}
       <div hidden={tab !== "dashboard"}><Dashboard state={state} onOpenPlans={() => setTab("plans")} onOpenSetups={() => setTab("setups")} /></div>
       <div hidden={tab !== "rules"}><RulesPage state={state} setState={setState} /></div>
       <div hidden={tab !== "setups"}><SetupsPage state={state} setState={setState} /></div>

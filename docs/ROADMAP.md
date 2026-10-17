@@ -155,9 +155,9 @@
 
 ### Próxima evolução estrutural
 
-- [ ] Migrar anexos para armazenamento deduplicado por ID: arquivos no desktop e IndexedDB na versão web.
+- [x] Migrar anexos para armazenamento deduplicado por ID: arquivos físicos na pasta de dados do desktop e IndexedDB na versão web, mantendo backups JSON autocontidos e migração transparente do schema v9.
 - [x] Fazer snapshots referenciarem anexos sem duplicar a mesma imagem em base64 no JSON persistido (schema v9 + `attachmentData`).
 - [x] Definir política de retenção para backups `pre-update` e `pre-restore`: manter as 5 cópias mais recentes de cada tipo, sem rotacionar backups manuais.
-- [ ] Substituir a tradução baseada em `MutationObserver` por internacionalização declarativa no React.
+- [x] Substituir a tradução baseada em `MutationObserver` por internacionalização declarativa no React, aplicada no runtime JSX durante a renderização sem reescrever o DOM.
 - [x] Revisar a galeria para abrir imagens via Blob/Object URL no WebView2, com revogação automática ao fechar a visualização.
 - [x] Adicionar testes automatizados para importação CSV/JSON, datas, migrações, deduplicação de imagens, retenção de backups e proteção contra perda de dados.

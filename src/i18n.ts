@@ -1,5 +1,3 @@
-import { useEffect } from "react";
-
 export type UiLanguage = "pt-BR" | "en" | "es";
 
 export const LANGUAGE_OPTIONS: Array<{ value: UiLanguage; label: string }> = [
@@ -1157,95 +1155,16 @@ export function translateUi(source: string, language: UiLanguage) {
   return source;
 }
 
-type TextMemory = { source: string; rendered: string };
-const textMemory = new WeakMap<Node, TextMemory>();
-const attributeMemory = new WeakMap<Element, Record<string, TextMemory>>();
+let activeInterfaceLanguage: UiLanguage = "pt-BR";
 
-function translateTextNode(node: Node, language: UiLanguage) {
-  const current = node.nodeValue ?? "";
-  if (!current.trim()) return;
-
-  let memory = textMemory.get(node);
-  if (!memory || current !== memory.rendered) {
-    memory = { source: current, rendered: current };
-    textMemory.set(node, memory);
-  }
-
-  const leading = memory.source.match(/^\s*/)?.[0] ?? "";
-  const trailing = memory.source.match(/\s*$/)?.[0] ?? "";
-  const core = memory.source.trim();
-  const next = leading + translateUi(core, language) + trailing;
-
-  if (current !== next) node.nodeValue = next;
-  memory.rendered = next;
-}
-
-function translateAttribute(element: Element, name: "placeholder" | "title" | "aria-label", language: UiLanguage) {
-  const current = element.getAttribute(name);
-  if (!current) return;
-
-  let all = attributeMemory.get(element);
-  if (!all) {
-    all = {};
-    attributeMemory.set(element, all);
-  }
-  let memory = all[name];
-  if (!memory || current !== memory.rendered) {
-    memory = { source: current, rendered: current };
-    all[name] = memory;
-  }
-
-  const next = translateUi(memory.source, language);
-  if (current !== next) element.setAttribute(name, next);
-  memory.rendered = next;
-}
-
-function translateTree(root: Node, language: UiLanguage) {
-  if (root.nodeType === Node.TEXT_NODE) {
-    translateTextNode(root, language);
-    return;
-  }
-
-  if (root instanceof Element) {
-    translateAttribute(root, "placeholder", language);
-    translateAttribute(root, "title", language);
-    translateAttribute(root, "aria-label", language);
-  }
-
-  root.childNodes.forEach((child) => translateTree(child, language));
-}
-
-export function useInterfaceLanguage(language: UiLanguage) {
-  useEffect(() => {
+export function setInterfaceLanguage(language: UiLanguage) {
+  activeInterfaceLanguage = language;
+  if (typeof document !== "undefined") {
     document.documentElement.lang = language;
     document.title = "Trade Blueprint";
+  }
+}
 
-    const run = () => translateTree(document.body, language);
-    run();
-
-    const observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        if (mutation.type === "characterData") {
-          translateTextNode(mutation.target, language);
-        } else if (mutation.type === "attributes" && mutation.target instanceof Element) {
-          const name = mutation.attributeName;
-          if (name === "placeholder" || name === "title" || name === "aria-label") {
-            translateAttribute(mutation.target, name, language);
-          }
-        } else {
-          mutation.addedNodes.forEach((node) => translateTree(node, language));
-        }
-      }
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-      attributes: true,
-      attributeFilter: ["placeholder", "title", "aria-label"],
-    });
-
-    return () => observer.disconnect();
-  }, [language]);
+export function currentInterfaceLanguage() {
+  return activeInterfaceLanguage;
 }
