@@ -1,4 +1,6 @@
-import { STORAGE_KEY } from "./storage";
+// Chave legada deliberadamente estável para preservar instalações anteriores ao rebranding.
+// Mantê-la igual a STORAGE_KEY em storage.ts.
+const STORAGE_KEY = "plano-de-trade-data-v1";
 
 const DB_NAME = "trade-blueprint-attachments";
 const DB_VERSION = 1;
