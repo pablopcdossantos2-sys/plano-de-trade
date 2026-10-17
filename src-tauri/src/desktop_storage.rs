@@ -99,6 +99,34 @@ fn collect_attachment_ids(value: &Value, ids: &mut BTreeSet<String>) {
     }
 }
 
+fn collect_unresolved_attachment_ids(value: &Value, ids: &mut BTreeSet<String>) {
+    match value {
+        Value::Array(items) => {
+            for item in items {
+                collect_unresolved_attachment_ids(item, ids);
+            }
+        }
+        Value::Object(object) => {
+            if is_attachment_object(object) {
+                let data_url_is_empty = object
+                    .get("dataUrl")
+                    .and_then(Value::as_str)
+                    .map(str::is_empty)
+                    .unwrap_or(true);
+                if data_url_is_empty {
+                    if let Some(id) = object.get("id").and_then(Value::as_str) {
+                        ids.insert(id.to_string());
+                    }
+                }
+            }
+            for item in object.values() {
+                collect_unresolved_attachment_ids(item, ids);
+            }
+        }
+        _ => {}
+    }
+}
+
 fn write_attachment_if_missing(app: &AppHandle, id: &str, data_url: &str) -> Result<(), String> {
     let path = attachment_path(app, id)?;
     if path.exists() {
@@ -164,7 +192,9 @@ fn hydrate_attachment_data(app: &AppHandle, state_json: &str) -> Result<String, 
     let mut value: Value = serde_json::from_str(state_json)
         .map_err(|error| format!("Estado JSON inválido: {error}"))?;
     let mut ids = BTreeSet::new();
-    collect_attachment_ids(&value, &mut ids);
+    // Backups antigos (v1-v8) ainda podem trazer dataUrl dentro do próprio Attachment.
+    // Só buscamos arquivos físicos para referências realmente externalizadas (dataUrl vazio).
+    collect_unresolved_attachment_ids(&value, &mut ids);
     if ids.is_empty() {
         return Ok(state_json.to_string());
     }
@@ -559,7 +589,10 @@ pub fn create_pre_update_backup(app: &AppHandle) -> Result<Option<String>, Strin
 
 #[cfg(test)]
 mod tests {
-    use super::{attachment_file_name, collect_attachment_ids, rotate_backup_kind, validate_state_json};
+    use super::{
+        attachment_file_name, collect_attachment_ids, collect_unresolved_attachment_ids,
+        rotate_backup_kind, validate_state_json,
+    };
     use std::{
         fs,
         path::PathBuf,
@@ -638,6 +671,32 @@ mod tests {
         let mut ids = std::collections::BTreeSet::new();
         collect_attachment_ids(&value, &mut ids);
         assert_eq!(ids.into_iter().collect::<Vec<_>>(), vec!["img-1".to_string()]);
+    }
+
+    #[test]
+    fn legacy_inline_attachment_does_not_require_external_file() {
+        let value: serde_json::Value = serde_json::json!({
+            "attachments": [
+                {
+                    "id": "img-inline",
+                    "name": "legado.webp",
+                    "dataUrl": "data:image/webp;base64,AAAA",
+                    "createdAt": "2026-10-16T12:00:00.000Z"
+                },
+                {
+                    "id": "img-external",
+                    "name": "novo.webp",
+                    "dataUrl": "",
+                    "createdAt": "2026-10-16T12:00:00.000Z"
+                }
+            ]
+        });
+        let mut ids = std::collections::BTreeSet::new();
+        collect_unresolved_attachment_ids(&value, &mut ids);
+        assert_eq!(
+            ids.into_iter().collect::<Vec<_>>(),
+            vec!["img-external".to_string()]
+        );
     }
 
     #[test]

@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { loadWebStatePayload } from "../src/attachmentStore.ts";
 import {
   CURRENT_SCHEMA_VERSION,
   STORAGE_KEY,
@@ -179,4 +180,30 @@ test("migra schema v8 para v9 preservando imagens embutidas", () => {
   const persistedV9 = JSON.parse(serializeState(migrated));
   assert.equal(persistedV9.settings.attachments[0].dataUrl, "");
   assert.equal(persistedV9.attachmentData["img-v8"], attachment.dataUrl);
+});
+
+
+test("loader web preserva schema legado com imagens inline antes da migracao", async () => {
+  installStorage();
+  const legacy = {
+    schemaVersion: 8,
+    settings: {
+      traderName: "",
+      assets: ["WINFUT"],
+      defaultMaxRisk: "1R",
+      defaultMaxTrades: 3,
+      theme: "dark",
+      language: "pt-BR",
+      attachments: [{
+        id: "img-inline",
+        name: "legado.webp",
+        dataUrl: "data:image/webp;base64,AAAA",
+        createdAt: "2026-10-16T12:00:00.000Z",
+      }],
+    },
+  };
+  const raw = JSON.stringify(legacy);
+  localStorage.setItem(STORAGE_KEY, raw);
+
+  assert.equal(await loadWebStatePayload(), raw);
 });

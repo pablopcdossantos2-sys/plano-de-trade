@@ -135,9 +135,12 @@ export async function loadWebStatePayload() {
   if (!raw) return null;
 
   const parsed = JSON.parse(raw) as JsonObject;
-  const embedded = isObject(parsed.attachmentData)
-    ? Object.values(parsed.attachmentData).some((value) => typeof value === "string" && !!value)
-    : false;
+  // Schemas anteriores ao v9 carregam a imagem diretamente em cada Attachment.
+  // Eles precisam chegar intactos ao migrador de storage antes da primeira externalização.
+  if (!isObject(parsed.attachmentData)) return raw;
+
+  const embedded = Object.values(parsed.attachmentData)
+    .some((value) => typeof value === "string" && !!value);
   if (embedded) return raw;
 
   const ids = collectAttachmentIds(parsed);
