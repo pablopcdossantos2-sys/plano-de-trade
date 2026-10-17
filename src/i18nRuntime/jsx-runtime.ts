@@ -1,3 +1,4 @@
+import type * as React from "react";
 import { Fragment, jsx as reactJsx, jsxs as reactJsxs } from "react/jsx-runtime";
 import { currentInterfaceLanguage, translateUi } from "../i18n";
 
@@ -54,5 +55,17 @@ export const jsx = ((type: unknown, props: unknown, key?: unknown) =>
 
 export const jsxs = ((type: unknown, props: unknown, key?: unknown) =>
   reactJsxs(type as never, translatedProps(type, props) as never, key as never)) as typeof reactJsxs;
+
+export namespace JSX {
+  export type ElementType = React.JSX.ElementType;
+  export interface Element extends React.JSX.Element {}
+  export interface ElementClass extends React.JSX.ElementClass {}
+  export interface ElementAttributesProperty extends React.JSX.ElementAttributesProperty {}
+  export interface ElementChildrenAttribute extends React.JSX.ElementChildrenAttribute {}
+  export type LibraryManagedAttributes<C, P> = React.JSX.LibraryManagedAttributes<C, P>;
+  export interface IntrinsicAttributes extends React.JSX.IntrinsicAttributes {}
+  export interface IntrinsicClassAttributes<T> extends React.JSX.IntrinsicClassAttributes<T> {}
+  export interface IntrinsicElements extends React.JSX.IntrinsicElements {}
+}
 
 export { Fragment };
